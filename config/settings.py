@@ -1,5 +1,11 @@
 """
 Django settings for content_mentor project.
+
+⚠️ SECURITY NOTICE:
+- Bot token and nickname are stored ONLY in the database
+- They are loaded from BotSettings model at runtime
+- Never store bot credentials in settings.py or .env files
+- Always use the Django admin panel to configure bot credentials
 """
 
 import os
