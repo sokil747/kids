@@ -53,7 +53,7 @@ content_mentor/
 ## Bot Information
 
 - **Bot Username**: @kidsgenius_bot
-- **Bot Token**: `<BOT_TOKEN_REMOVED>`
+- **Bot Token**: ⚠️ **Stored securely in database** - See [Security & Bot Credentials](#security--bot-credentials)
 - **Platform**: Telegram (WhatsApp ready for future integration)
 - **Access Mode**: Configurable (default: Public)
 
@@ -99,20 +99,19 @@ python manage.py createsuperuser
 # Follow prompts to create admin user
 ```
 
-### 6. Load Initial Bot Settings
+### 6. Configure Bot Credentials Via Admin Panel
 
-```bash
-python manage.py shell
->>> from apps.core.models import BotSettings
->>> BotSettings.objects.create(
-...     telegram_token='<BOT_TOKEN_REMOVED>',
-...     telegram_nickname='kidsgenius_bot',
-...     access_mode='public',
-...     is_active=True,
-...     description='KidsGenius - Educational content for children'
-... )
->>> exit()
-```
+After creating the superuser, login to the admin panel and add bot settings:
+
+1. Go to `http://localhost:8000/admin`
+2. Click **Bot Settings** 
+3. Click **Add Bot Settings**
+4. Enter your Telegram bot token and nickname
+5. Select access mode (Public, Private, Paid, Test)
+6. Check "Active" to enable the bot
+7. Save
+
+⚠️ **IMPORTANT**: Never store bot credentials in code, environment files, or version control. Always use the admin panel (database storage).
 
 ### 7. Run Development Server
 
@@ -282,8 +281,49 @@ See `Dockerfile` (to be created)
 
 ## Security Considerations
 
+### Bot Credentials Storage (⚠️ CRITICAL)
+
+**NEVER store bot credentials in:**
+- Environment files (`.env`)
+- Source code (`.py`, `.js`, etc.)
+- Version control (`.git`)
+- Configuration files tracked in git
+
+**ALWAYS store bot credentials in:**
+- **Database** via Django admin panel (recommended)
+- Secure vault systems (AWS Secrets Manager, HashiCorp Vault, etc.)
+- Encrypted environment systems available only at runtime
+
+#### How to Manage Bot Credentials
+
+1. **Add bot credentials via admin panel:**
+   - Go to `http://localhost:8000/admin/core/botsettings/`
+   - Click "Add Bot Settings"
+   - Enter your Telegram bot token and nickname
+   - Mark as "Active"
+   - Save
+
+2. **Load credentials in your bot handler:**
+   ```python
+   from apps.core.models import BotSettings
+   
+   settings = BotSettings.objects.filter(is_active=True).first()
+   if settings:
+       bot_token = settings.telegram_token
+       bot_nickname = settings.telegram_nickname
+       # Use credentials to initialize bot
+   ```
+
+3. **For production deployment:**
+   - Store credentials in environment at deployment time only
+   - Load into database during initialization
+   - Remove from environment after deployment
+   - Or use cloud secret manager (AWS, Azure, GCP)
+
+### General Security Best Practices
+
 1. **Bot Token**: Keep tokens secure, never commit to git
-2. **Admin Access**: Use strong passwords for superuser
+2. **Admin Access**: Use strong passwords for superuser account
 3. **User IDs**: Validate user IDs from API requests
 4. **Database**: Use strong passwords for database
 5. **HTTPS**: Always use HTTPS in production

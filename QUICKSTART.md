@@ -6,7 +6,7 @@ Your complete Django backend for the **kidsgenius_bot** Telegram bot is ready!
 
 ### Project Name: **ContentMentor**
 ### Bot Nickname: **@kidsgenius_bot**
-### Bot Token: **<BOT_TOKEN_REMOVED>** ✅
+### Bot Token: ⚠️ **Securely stored in database** (see installation step 6)
 
 ---
 
@@ -41,8 +41,8 @@ content_mentor/
 ├── requirements.txt                   # Python dependencies
 ├── manage.py                          # Django CLI
 ├── setup.sh                           # Automated setup script
-├── .env                               # Environment variables (with your bot token!)
-├── .env.example                       # Template for .env
+├── .env                               # Environment variables (DO NOT commit!)
+├── .env.example                       # Template for safe configuration
 ├── README.md                          # Full documentation
 ├── QUICKSTART.md                      # This file
 └── .gitignore                         # Git ignore rules
