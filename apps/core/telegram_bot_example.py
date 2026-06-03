@@ -273,7 +273,7 @@ async def content_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     )
 
 
-async def main() -> None:
+def main() -> None:
     """Start the bot."""
     if not bot_handler.bot_settings:
         logger.error("Bot settings not configured")
@@ -293,10 +293,9 @@ async def main() -> None:
     application.add_handler(CallbackQueryHandler(content_callback, pattern=r'^content_'))
 
     # Run the bot
-    await application.run_polling()
+    application.run_polling()
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    import asyncio
-    asyncio.run(main())
+    main()
