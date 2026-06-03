@@ -140,20 +140,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Check access
     has_access = bot_handler.check_access(user.id)
     
+    # Send appropriate welcome message
     if not has_access:
-        await update.message.reply_text(
-            f"❌ Access Denied!\n\n"
-            f"Bot: {bot_handler.bot_settings.telegram_nickname}\n"
-            f"Access Mode: {bot_handler.bot_settings.get_access_mode_display()}\n\n"
-            "Contact admin for access."
-        )
+        # Unauthorized message
+        message = bot_handler.bot_settings.unauthorized_welcome_message if bot_handler.bot_settings else "Access denied."
+        await update.message.reply_text(message)
         return
     
-    # Welcome message
+    # Authorized message with categories
+    message = bot_handler.bot_settings.authorized_welcome_message if bot_handler.bot_settings else "Welcome to the bot!"
     await update.message.reply_text(
-        f"🎓 Welcome to {bot_handler.bot_settings.telegram_nickname}!\n\n"
-        f"👤 Hello {user.first_name}!\n\n"
-        "Choose a category to explore content:",
+        message,
         reply_markup=get_categories_keyboard()
     )
 

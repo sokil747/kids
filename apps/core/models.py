@@ -62,6 +62,16 @@ class BotSettings(models.Model):
         help_text="Bot description and purpose"
     )
     
+    # Welcome messages
+    authorized_welcome_message = models.TextField(
+        default="✨ Вас вітає InsiderKids — навіатор у світі індустрії дитячих товарів і розвиток !\n\n📢 Підписуйтесь, щоб не пропустити головне:\n🔔 InsiderKidsNews\nhttps://t.me/InsiderKidsNews\n\n📍 тренди | новини | огляди | події\n📱 Все найцікавіше в одній стрічці",
+        help_text="Welcome message for authorized users"
+    )
+    unauthorized_welcome_message = models.TextField(
+        default="The project is under development.",
+        help_text="Message shown to unauthorized users"
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
