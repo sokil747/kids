@@ -8,6 +8,8 @@ import os
 import requests
 import logging
 from typing import Optional
+from decouple import config
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -32,9 +34,8 @@ class TelegramBotHandler:
     """
 
     def __init__(self):
-        self.api_base = os.getenv('API_BASE_URL', 'http://localhost:8000/api')
+        self.api_base = config('API_BASE_URL', default='http://localhost:8000/api')
         self.bot_settings: Optional[BotSettings] = None
-        self.load_bot_settings()
 
     def load_bot_settings(self):
         """Load bot settings from database."""
@@ -47,15 +48,15 @@ class TelegramBotHandler:
         except Exception as e:
             logger.error(f"Error loading bot settings: {e}")
 
-    def track_user(self, user_id: int, username: str = None, platform: str = 'telegram'):
+    async def track_user(self, user_id: int, username: str = None, platform: str = 'telegram'):
         """Track or create user in database."""
         try:
-            user, created = BotUser.objects.get_or_create(
+            user, created = await sync_to_async(BotUser.objects.get_or_create)(
                 user_id=str(user_id),
                 platform=platform,
                 defaults={'username': username}
             )
-            user.increment_interaction()
+            await sync_to_async(user.increment_interaction)()
             return user
         except Exception as e:
             logger.error(f"Error tracking user {user_id}: {e}")
@@ -135,7 +136,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     
     # Track user
-    bot_user = bot_handler.track_user(user.id, user.username)
+    bot_user = await bot_handler.track_user(user.id, user.username)
     
     # Check access
     has_access = bot_handler.check_access(user.id)
