@@ -36,6 +36,7 @@ class TelegramBotHandler:
     def __init__(self):
         self.api_base = config('API_BASE_URL', default='http://localhost:8000/api')
         self.bot_settings: Optional[BotSettings] = None
+        self.load_bot_settings()
 
     def load_bot_settings(self):
         """Load bot settings from database."""
