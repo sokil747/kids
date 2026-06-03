@@ -2,10 +2,13 @@ Django==4.2.13
 djangorestframework==3.14.0
 django-cors-headers==4.3.1
 python-decouple==3.8
+python-telegram-bot==20.7
+Pillow==10.1.0
+uwsgi==2.0.26
 psycopg2-binary==2.9.9
-pillow==10.1.0
-requests==2.31.0
 celery==5.3.4
 redis==5.0.1
-python-telegram-bot==20.7
 twilio==9.2.1
+httpx==0.25.2
+requests==2.31.0
+PyJWT==2.13.0

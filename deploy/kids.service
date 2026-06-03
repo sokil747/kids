@@ -1,0 +1,19 @@
+[Unit]
+Description=Kids uWSGI service
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/kids
+Environment=DJANGO_SETTINGS_MODULE=config.settings
+ExecStart=/var/www/kids/venv/bin/uwsgi --ini /var/www/kids/uwsgi.ini
+Restart=always
+RestartSec=10
+KillSignal=SIGQUIT
+Type=notify
+StandardError=syslog
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target
