@@ -81,7 +81,10 @@ class TelegramBotHandler:
         try:
             response = requests.get(f'{self.api_base}/categories/')
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                if isinstance(data, dict):
+                    return data.get('results', [])
+                return data
             return []
         except Exception as e:
             logger.error(f"Error fetching categories: {e}")
