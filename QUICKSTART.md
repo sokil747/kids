@@ -112,6 +112,9 @@ Open browser to: **http://localhost:8000/admin**
 - ✅ Change bot token anytime
 - ✅ Switch access mode (public/private/paid/test)
 - ✅ Enable/disable bot
+- ✅ Configure welcome messages:
+  - **Authorized Users**: Message shown when user has access
+  - **Unauthorized Users**: Message shown when user doesn't have access
 - ✅ View audit log of all changes
 
 ### **Category Management**

@@ -127,8 +127,11 @@ Access admin panel at: `http://localhost:8000/admin`
 1. Go to **Admin > Bot Settings**
 2. Configure Telegram token and nickname
 3. Set access mode (Public, Private, Paid, Test)
-4. Enable/disable bot status
-5. Save changes (automatically applied to bot)
+4. Configure welcome messages:
+   - **Authorized Welcome Message**: Shown when authorized users start the bot (default: Ukrainian InsiderKids message)
+   - **Unauthorized Welcome Message**: Shown when unauthorized users try to access (default: "The project is under development.")
+5. Enable/disable bot status
+6. Save changes (automatically applied to bot)
 
 ### Category Management
 1. Go to **Admin > Categories**
