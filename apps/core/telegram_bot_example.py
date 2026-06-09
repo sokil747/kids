@@ -143,21 +143,27 @@ class TelegramBotHandler:
 bot_handler = TelegramBotHandler()
 
 
+def category_label(cat: dict) -> str:
+    name = cat['name']
+    if name and ord(name[0]) >= 128:
+        return name
+    emoji = "📂" if cat.get('children') else "📁"
+    return f"{emoji} {name}"
+
+
 def build_category_keyboard(categories: list, parent_id: int = None, inline: bool = False) -> InlineKeyboardMarkup:
     """Build inline keyboard for a list of categories."""
     keyboard = []
     if inline:
         row = []
         for cat in categories:
-            emoji = "📂" if cat.get('children') else "📁"
-            row.append(InlineKeyboardButton(f"{emoji} {cat['name']}", callback_data=f"cat_{cat['id']}"))
+            row.append(InlineKeyboardButton(category_label(cat), callback_data=f"cat_{cat['id']}"))
         if row:
             keyboard.append(row)
     else:
         for cat in categories:
-            emoji = "📂" if cat.get('children') else "📁"
             keyboard.append([
-                InlineKeyboardButton(f"{emoji} {cat['name']}", callback_data=f"cat_{cat['id']}")
+                InlineKeyboardButton(category_label(cat), callback_data=f"cat_{cat['id']}")
             ])
     nav = []
     if parent_id is not None:
@@ -278,14 +284,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 if inline:
                     row = []
                     for child in children:
-                        emoji = "📂" if child.get('children') else "📁"
-                        row.append(InlineKeyboardButton(f"{emoji} {child['name']}", callback_data=f"cat_{child['id']}"))
+                        row.append(InlineKeyboardButton(category_label(child), callback_data=f"cat_{child['id']}"))
                     if row:
                         child_rows.append(row)
                 else:
                     for child in children:
-                        emoji = "📂" if child.get('children') else "📁"
-                        child_rows.append([InlineKeyboardButton(f"{emoji} {child['name']}", callback_data=f"cat_{child['id']}")])
+                        child_rows.append([InlineKeyboardButton(category_label(child), callback_data=f"cat_{child['id']}")])
 
                 nav_row = [
                     InlineKeyboardButton("🔙 Back", callback_data="back_main"),
