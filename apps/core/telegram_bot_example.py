@@ -194,14 +194,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     message = bot_handler.bot_settings.authorized_welcome_message if bot_handler.bot_settings else "Welcome to the bot!"
+    await update.message.reply_text(message)
+
     categories = bot_handler.get_categories()
     if categories:
+        cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
         await update.message.reply_text(
-            message,
+            cta,
             reply_markup=build_category_keyboard(categories, inline=True)
         )
-    else:
-        await update.message.reply_text(message)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -228,8 +229,9 @@ async def categories_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     """Show list of categories."""
     categories = bot_handler.get_categories()
     if categories:
+        cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
         await update.message.reply_text(
-            "📚 Select a category:",
+            cta,
             reply_markup=build_category_keyboard(categories, inline=True)
         )
     else:
@@ -245,8 +247,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if data == "main_menu":
         categories = bot_handler.get_categories()
         if categories:
+            cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
             await query.edit_message_text(
-                "📚 Main menu — select a category:",
+                cta,
                 reply_markup=build_category_keyboard(categories, inline=True)
             )
         else:

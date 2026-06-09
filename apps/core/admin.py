@@ -27,6 +27,10 @@ class BotSettingsAdmin(admin.ModelAdmin):
             'classes': ('wide',),
             'description': 'Customize welcome messages for different user types'
         }),
+        ('Navigation', {
+            'fields': ('root_cta_message',),
+            'description': 'Call-to-action text shown at the top of the main menu'
+        }),
         ('Additional Info', {
             'fields': ('description',),
             'classes': ('wide',)

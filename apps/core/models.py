@@ -71,6 +71,11 @@ class BotSettings(models.Model):
         default="The project is under development.",
         help_text="Message shown to unauthorized users"
     )
+    root_cta_message = models.CharField(
+        max_length=500,
+        default="Choose category:",
+        help_text="Call-to-action message shown at the main menu (above top-level categories)"
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
