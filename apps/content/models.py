@@ -152,7 +152,13 @@ class Content(models.Model):
         Category,
         on_delete=models.CASCADE,
         related_name='contents',
-        help_text="Parent category"
+        help_text="Primary category"
+    )
+    categories = models.ManyToManyField(
+        Category,
+        related_name='tagged_contents',
+        blank=True,
+        help_text="Additional categories/tags for this content"
     )
     tags = models.CharField(
         max_length=500,

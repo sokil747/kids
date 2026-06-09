@@ -110,6 +110,11 @@ class ContentAdmin(admin.ModelAdmin):
         ('Basic Information', {
             'fields': ('title', 'slug', 'description', 'category')
         }),
+        ('Categories / Tags', {
+            'fields': ('categories',),
+            'description': 'Assign additional categories to this content',
+            'classes': ('wide',)
+        }),
         ('Content', {
             'fields': ('content_type', 'body'),
             'classes': ('wide',)
@@ -139,7 +144,7 @@ class ContentAdmin(admin.ModelAdmin):
     search_fields = ('title', 'slug', 'description', 'tags')
     prepopulated_fields = {'slug': ('title',)}
     readonly_fields = ('created_at', 'updated_at', 'views_count')
-    filter_horizontal = ()
+    filter_horizontal = ('categories',)
     
     def get_readonly_fields(self, request, obj=None):
         """Set author as read-only if content exists."""

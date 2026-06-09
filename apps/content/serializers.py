@@ -34,12 +34,13 @@ class ContentSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     average_rating = serializers.SerializerMethodField()
     rating_count = serializers.SerializerMethodField()
+    categories_detail = CategorySerializer(source='categories', many=True, read_only=True)
     
     class Meta:
         model = Content
         fields = [
             'id', 'title', 'slug', 'description', 'body',
-            'content_type', 'category', 'category_name', 'tags',
+            'content_type', 'category', 'category_name', 'categories', 'categories_detail', 'tags',
             'image', 'media_url', 'file', 'order',
             'is_active', 'is_featured', 'is_premium',
             'views_count', 'average_rating', 'rating_count',

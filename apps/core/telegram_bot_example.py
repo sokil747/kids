@@ -1,9 +1,3 @@
-"""
-Example Telegram bot handler.
-Shows how to integrate the Django backend with python-telegram-bot.
-This is a starting point for your bot implementation.
-"""
-
 import os
 import requests
 import logging
@@ -67,7 +61,7 @@ class TelegramBotHandler:
         try:
             if not self.bot_settings:
                 return False
-            
+
             response = requests.get(
                 f'{self.api_base}/check-access/{user_id}/{self.bot_settings.access_mode}/'
             )
@@ -77,7 +71,7 @@ class TelegramBotHandler:
             return False
 
     def get_categories(self) -> list:
-        """Fetch main categories from backend."""
+        """Fetch top-level categories from backend."""
         try:
             response = requests.get(f'{self.api_base}/categories/')
             if response.status_code == 200:
@@ -90,6 +84,17 @@ class TelegramBotHandler:
             logger.error(f"Error fetching categories: {e}")
             return []
 
+    def get_category(self, category_id: int) -> dict:
+        """Fetch a single category with children."""
+        try:
+            response = requests.get(f'{self.api_base}/categories/{category_id}/')
+            if response.status_code == 200:
+                return response.json()
+            return {}
+        except Exception as e:
+            logger.error(f"Error fetching category {category_id}: {e}")
+            return {}
+
     def get_category_contents(self, category_id: int) -> list:
         """Fetch contents for category."""
         try:
@@ -97,7 +102,10 @@ class TelegramBotHandler:
                 f'{self.api_base}/categories/{category_id}/contents/'
             )
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                if isinstance(data, dict):
+                    return data.get('results', [])
+                return data
             return []
         except Exception as e:
             logger.error(f"Error fetching contents: {e}")
@@ -135,29 +143,57 @@ class TelegramBotHandler:
 bot_handler = TelegramBotHandler()
 
 
+def build_category_keyboard(categories: list, parent_id: int = None) -> InlineKeyboardMarkup:
+    """Build inline keyboard for a list of categories."""
+    keyboard = []
+    for cat in categories:
+        emoji = "📂" if cat.get('children') else "📁"
+        keyboard.append([
+            InlineKeyboardButton(f"{emoji} {cat['name']}", callback_data=f"cat_{cat['id']}")
+        ])
+    nav = []
+    if parent_id is not None:
+        nav.append(InlineKeyboardButton("🔙 Back", callback_data=f"back_{parent_id}"))
+    nav.append(InlineKeyboardButton("🏠 Main menu", callback_data="main_menu"))
+    if nav:
+        keyboard.append(nav)
+    return InlineKeyboardMarkup(keyboard)
+
+
+def build_content_keyboard(contents: list, parent_id: int) -> InlineKeyboardMarkup:
+    """Build inline keyboard for a list of content items."""
+    keyboard = []
+    for c in contents[:10]:
+        keyboard.append([
+            InlineKeyboardButton(f"📄 {c['title']}", callback_data=f"content_{c['id']}")
+        ])
+    keyboard.append([
+        InlineKeyboardButton("🔙 Back", callback_data=f"back_{parent_id}"),
+        InlineKeyboardButton("🏠 Main menu", callback_data="main_menu")
+    ])
+    return InlineKeyboardMarkup(keyboard)
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start command."""
     user = update.effective_user
-    
-    # Track user
     bot_user = await bot_handler.track_user(user.id, user.username)
-    
-    # Check access
     has_access = bot_handler.check_access(user.id)
-    
-    # Send appropriate welcome message
+
     if not has_access:
-        # Unauthorized message
         message = bot_handler.bot_settings.unauthorized_welcome_message if bot_handler.bot_settings else "Access denied."
         await update.message.reply_text(message)
         return
-    
-    # Authorized message with categories
+
     message = bot_handler.bot_settings.authorized_welcome_message if bot_handler.bot_settings else "Welcome to the bot!"
-    await update.message.reply_text(
-        message,
-        reply_markup=get_categories_keyboard()
-    )
+    categories = bot_handler.get_categories()
+    if categories:
+        await update.message.reply_text(
+            message,
+            reply_markup=build_category_keyboard(categories)
+        )
+    else:
+        await update.message.reply_text(message)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -182,100 +218,138 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def categories_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Show list of categories."""
-    await update.message.reply_text(
-        "📚 Select a category:",
-        reply_markup=get_categories_keyboard()
-    )
-
-
-def get_categories_keyboard() -> InlineKeyboardMarkup:
-    """Create keyboard with categories."""
     categories = bot_handler.get_categories()
-    
-    keyboard = []
-    for category in categories:
-        keyboard.append([
-            InlineKeyboardButton(
-                f"📁 {category['name']}",
-                callback_data=f"cat_{category['id']}"
-            )
-        ])
-    
-    return InlineKeyboardMarkup(keyboard)
+    if categories:
+        await update.message.reply_text(
+            "📚 Select a category:",
+            reply_markup=build_category_keyboard(categories)
+        )
+    else:
+        await update.message.reply_text("No categories available.")
 
 
-async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle category selection."""
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle all callback queries."""
     query = update.callback_query
-    category_id = int(query.data.split('_')[1])
-    
+    data = query.data
     await query.answer()
-    
-    contents = bot_handler.get_category_contents(category_id)
-    
-    if not contents:
-        await query.edit_message_text("No content available in this category.")
-        return
-    
-    keyboard = []
-    for content in contents[:10]:  # Limit to 10 items
-        keyboard.append([
-            InlineKeyboardButton(
-                f"📄 {content['title']}",
-                callback_data=f"content_{content['id']}"
+
+    if data == "main_menu":
+        categories = bot_handler.get_categories()
+        if categories:
+            await query.edit_message_text(
+                "📚 Main menu — select a category:",
+                reply_markup=build_category_keyboard(categories)
             )
-        ])
-    
-    keyboard.append([
-        InlineKeyboardButton("🔙 Back", callback_data="back_categories")
-    ])
-    
-    await query.edit_message_text(
-        "📖 Select content:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-
-
-async def content_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle content selection."""
-    query = update.callback_query
-    content_id = int(query.data.split('_')[1])
-    
-    await query.answer()
-    
-    content = bot_handler.get_content_detail(content_id)
-    
-    if not content:
-        await query.edit_message_text("Content not found.")
+        else:
+            await query.edit_message_text("No categories available.")
         return
-    
-    message = f"""
+
+    if data.startswith("cat_"):
+        category_id = int(data.split("_")[1])
+        category = bot_handler.get_category(category_id)
+        if not category:
+            await query.edit_message_text("Category not found.")
+            return
+
+        children = category.get('children', [])
+        contents_data = bot_handler.get_category_contents(category_id)
+
+        if children:
+            parent_id = category.get('parent')
+            await query.edit_message_text(
+                f"📂 **{category['name']}**\n{category.get('description', '')}",
+                reply_markup=build_category_keyboard(children, parent_id=parent_id),
+                parse_mode='Markdown'
+            )
+        elif contents_data:
+            await query.edit_message_text(
+                f"📖 Content in **{category['name']}**:",
+                reply_markup=build_content_keyboard(contents_data, parent_id=category_id),
+                parse_mode='Markdown'
+            )
+        else:
+            await query.edit_message_text(
+                f"📂 **{category['name']}**\n\nNo subcategories or content yet.",
+                parse_mode='Markdown'
+            )
+        return
+
+    if data.startswith("back_"):
+        parent_id = data.split("_")[1]
+        if parent_id == "None":
+            categories = bot_handler.get_categories()
+            if categories:
+                await query.edit_message_text(
+                    "📚 Main menu — select a category:",
+                    reply_markup=build_category_keyboard(categories)
+                )
+            return
+
+        parent = bot_handler.get_category(int(parent_id))
+        if not parent:
+            await query.edit_message_text("Category not found.")
+            return
+
+        children = parent.get('children', [])
+        active_children = [c for c in children if c.get('is_active', True)]
+        await query.edit_message_text(
+            f"📂 **{parent['name']}**",
+            reply_markup=build_category_keyboard(active_children, parent_id=parent.get('parent')),
+            parse_mode='Markdown'
+        )
+        return
+
+    if data.startswith("content_"):
+        parts = data.split("_")
+        content_id = int(parts[1])
+        content = bot_handler.get_content_detail(content_id)
+
+        if not content:
+            await query.edit_message_text("Content not found.")
+            return
+
+        message = f"""
 📙 **{content['title']}**
 
-{content['description']}
+{content.get('description', '')}
 
-**Content:** {content['body'][:200]}...
+{content.get('body', '')[:500]}
 
-⭐ Rating: {content.get('average_rating', 'Not rated')}
-👁️ Views: {content.get('views_count', 0)}
+⭐ Rating: {content.get('average_rating', 'Not rated')}  |  👁️ Views: {content.get('views_count', 0)}
 """
-    
-    keyboard = [
-        [
-            InlineKeyboardButton("⭐", callback_data=f"rate_{content_id}_5"),
-            InlineKeyboardButton("👍", callback_data=f"rate_{content_id}_4"),
-            InlineKeyboardButton("👌", callback_data=f"rate_{content_id}_3"),
-        ],
-        [
-            InlineKeyboardButton("🔙 Back", callback_data="back_categories")
+        cat_id = content.get('category')
+        keyboard = [
+            [
+                InlineKeyboardButton("⭐ 5", callback_data=f"rate_{content_id}_5"),
+                InlineKeyboardButton("👍 4", callback_data=f"rate_{content_id}_4"),
+                InlineKeyboardButton("👌 3", callback_data=f"rate_{content_id}_3"),
+            ],
+            [
+                InlineKeyboardButton("🔙 Back", callback_data=f"back_{cat_id}"),
+                InlineKeyboardButton("🏠 Main menu", callback_data="main_menu")
+            ]
         ]
-    ]
-    
-    await query.edit_message_text(
-        message,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode='Markdown'
-    )
+        await query.edit_message_text(
+            message,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='Markdown'
+        )
+        return
+
+    if data.startswith("rate_"):
+        parts = data.split("_")
+        content_id = int(parts[1])
+        rating = int(parts[2])
+        user = update.effective_user
+
+        success = bot_handler.rate_content(content_id, user.id, rating)
+        if success:
+            await query.edit_message_reply_markup(reply_markup=None)
+            await query.message.reply_text(f"✅ Thanks for rating! ({rating}★)")
+        else:
+            await query.message.reply_text("❌ Failed to save rating.")
+        return
 
 
 def main() -> None:
@@ -283,21 +357,17 @@ def main() -> None:
     if not bot_handler.bot_settings:
         logger.error("Bot settings not configured")
         return
-    
-    # Create the Application
+
     application = Application.builder().token(
         bot_handler.bot_settings.telegram_token
     ).build()
 
-    # Add handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("categories", categories_command))
-    
-    application.add_handler(CallbackQueryHandler(category_callback, pattern=r'^cat_'))
-    application.add_handler(CallbackQueryHandler(content_callback, pattern=r'^content_'))
 
-    # Run the bot
+    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(cat_|content_|back_|main_menu|rate_)'))
+
     application.run_polling()
 
 
