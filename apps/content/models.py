@@ -26,6 +26,11 @@ class Category(models.Model):
         blank=True,
         help_text="Category description"
     )
+    cta_message = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text="Call-to-action message shown when this category's subcategories are displayed (e.g. 'Choose country:')"
+    )
     
     # Hierarchy
     parent = models.ForeignKey(

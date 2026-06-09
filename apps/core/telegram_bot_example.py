@@ -266,8 +266,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if children:
             parent_id = category.get('parent')
             inline = category.get('inline_display', False)
+            cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**"
             await query.edit_message_text(
-                f"📂 **{category['name']}**\n{category.get('description', '')}",
+                cta,
                 reply_markup=build_category_keyboard(children, parent_id=parent_id, inline=inline),
                 parse_mode='Markdown'
             )
@@ -278,8 +279,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 parse_mode='Markdown'
             )
         else:
+            cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**\n\nNo subcategories or content yet."
             await query.edit_message_text(
-                f"📂 **{category['name']}**\n\nNo subcategories or content yet.",
+                cta,
                 parse_mode='Markdown'
             )
         return
@@ -303,8 +305,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         children = parent.get('children', [])
         active_children = [c for c in children if c.get('is_active', True)]
         inline = parent.get('inline_display', False)
+        cta = parent.get('cta_message', '').strip() or f"📂 **{parent['name']}**"
         await query.edit_message_text(
-            f"📂 **{parent['name']}**",
+            cta,
             reply_markup=build_category_keyboard(active_children, parent_id=parent.get('parent'), inline=inline),
             parse_mode='Markdown'
         )

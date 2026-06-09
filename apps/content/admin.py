@@ -14,7 +14,7 @@ class CategoryAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'slug', 'description')
+            'fields': ('name', 'slug', 'description', 'cta_message')
         }),
         ('Hierarchy', {
             'fields': ('parent',),
