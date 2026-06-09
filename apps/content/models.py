@@ -73,6 +73,10 @@ class Category(models.Model):
         default=False,
         help_text="Show subcategories as inline buttons (single row) instead of stacked"
     )
+    expand_children_inline = models.BooleanField(
+        default=True,
+        help_text="Show children in the same message below parent buttons (True) or send as a new message (False)"
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

@@ -265,16 +265,41 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         children = category.get('children', [])
         contents_data = bot_handler.get_category_contents(category_id)
+        expand = category.get('expand_children_inline', True)
 
         if children:
-            parent_id = category.get('parent')
             inline = category.get('inline_display', False)
-            cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**"
-            await query.edit_message_text(
-                cta,
-                reply_markup=build_category_keyboard(children, parent_id=parent_id, inline=inline),
-                parse_mode='Markdown'
-            )
+
+            if expand:
+                current_markup = query.message.reply_markup
+                base_rows = list(current_markup.inline_keyboard) if current_markup else []
+
+                child_rows = []
+                if inline:
+                    row = []
+                    for child in children:
+                        emoji = "📂" if child.get('children') else "📁"
+                        row.append(InlineKeyboardButton(f"{emoji} {child['name']}", callback_data=f"cat_{child['id']}"))
+                    if row:
+                        child_rows.append(row)
+                else:
+                    for child in children:
+                        emoji = "📂" if child.get('children') else "📁"
+                        child_rows.append([InlineKeyboardButton(f"{emoji} {child['name']}", callback_data=f"cat_{child['id']}")])
+
+                nav_row = [
+                    InlineKeyboardButton("🔙 Back", callback_data="back_main"),
+                    InlineKeyboardButton("🏠 Main menu", callback_data="main_menu")
+                ]
+                all_rows = base_rows + child_rows + [nav_row]
+                await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(all_rows))
+            else:
+                cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**"
+                await query.message.reply_text(
+                    cta,
+                    reply_markup=build_category_keyboard(children, parent_id=category.get('parent'), inline=inline),
+                    parse_mode='Markdown'
+                )
         elif contents_data:
             await query.edit_message_text(
                 f"📖 Content in **{category['name']}**:",
@@ -289,13 +314,24 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
         return
 
+    if data.startswith("back_main"):
+        categories = bot_handler.get_categories()
+        if categories:
+            cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
+            await query.edit_message_text(
+                cta,
+                reply_markup=build_category_keyboard(categories, inline=True)
+            )
+        return
+
     if data.startswith("back_"):
         parent_id = data.split("_")[1]
         if parent_id == "None":
             categories = bot_handler.get_categories()
             if categories:
+                cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
                 await query.edit_message_text(
-                    "📚 Main menu — select a category:",
+                    cta,
                     reply_markup=build_category_keyboard(categories, inline=True)
                 )
             return
@@ -382,7 +418,7 @@ def main() -> None:
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("categories", categories_command))
 
-    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(cat_|content_|back_|main_menu|rate_)'))
+    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(cat_|content_|back_main|back_|main_menu|rate_)'))
 
     application.run_polling()
 
