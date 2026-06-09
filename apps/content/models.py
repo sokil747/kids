@@ -70,7 +70,7 @@ class Category(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['parent', 'order', 'name']
+        ordering = ['parent_id', 'order', 'name']
         indexes = [
             models.Index(fields=['parent', 'order']),
             models.Index(fields=['slug']),
