@@ -25,7 +25,8 @@ class CategoryAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Display Settings', {
-            'fields': ('order', 'is_active', 'is_featured')
+            'fields': ('order', 'is_active', 'is_featured', 'inline_display'),
+            'description': 'Inline display shows subcategories as buttons in a single row'
         }),
         ('Metadata', {
             'fields': ('created_at', 'updated_at'),

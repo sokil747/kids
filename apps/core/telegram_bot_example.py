@@ -143,14 +143,22 @@ class TelegramBotHandler:
 bot_handler = TelegramBotHandler()
 
 
-def build_category_keyboard(categories: list, parent_id: int = None) -> InlineKeyboardMarkup:
+def build_category_keyboard(categories: list, parent_id: int = None, inline: bool = False) -> InlineKeyboardMarkup:
     """Build inline keyboard for a list of categories."""
     keyboard = []
-    for cat in categories:
-        emoji = "📂" if cat.get('children') else "📁"
-        keyboard.append([
-            InlineKeyboardButton(f"{emoji} {cat['name']}", callback_data=f"cat_{cat['id']}")
-        ])
+    if inline:
+        row = []
+        for cat in categories:
+            emoji = "📂" if cat.get('children') else "📁"
+            row.append(InlineKeyboardButton(f"{emoji} {cat['name']}", callback_data=f"cat_{cat['id']}"))
+        if row:
+            keyboard.append(row)
+    else:
+        for cat in categories:
+            emoji = "📂" if cat.get('children') else "📁"
+            keyboard.append([
+                InlineKeyboardButton(f"{emoji} {cat['name']}", callback_data=f"cat_{cat['id']}")
+            ])
     nav = []
     if parent_id is not None:
         nav.append(InlineKeyboardButton("🔙 Back", callback_data=f"back_{parent_id}"))
@@ -190,7 +198,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if categories:
         await update.message.reply_text(
             message,
-            reply_markup=build_category_keyboard(categories)
+            reply_markup=build_category_keyboard(categories, inline=True)
         )
     else:
         await update.message.reply_text(message)
@@ -222,7 +230,7 @@ async def categories_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if categories:
         await update.message.reply_text(
             "📚 Select a category:",
-            reply_markup=build_category_keyboard(categories)
+            reply_markup=build_category_keyboard(categories, inline=True)
         )
     else:
         await update.message.reply_text("No categories available.")
@@ -239,7 +247,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if categories:
             await query.edit_message_text(
                 "📚 Main menu — select a category:",
-                reply_markup=build_category_keyboard(categories)
+                reply_markup=build_category_keyboard(categories, inline=True)
             )
         else:
             await query.edit_message_text("No categories available.")
@@ -257,9 +265,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         if children:
             parent_id = category.get('parent')
+            inline = category.get('inline_display', False)
             await query.edit_message_text(
                 f"📂 **{category['name']}**\n{category.get('description', '')}",
-                reply_markup=build_category_keyboard(children, parent_id=parent_id),
+                reply_markup=build_category_keyboard(children, parent_id=parent_id, inline=inline),
                 parse_mode='Markdown'
             )
         elif contents_data:
@@ -282,7 +291,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if categories:
                 await query.edit_message_text(
                     "📚 Main menu — select a category:",
-                    reply_markup=build_category_keyboard(categories)
+                    reply_markup=build_category_keyboard(categories, inline=True)
                 )
             return
 
@@ -293,9 +302,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         children = parent.get('children', [])
         active_children = [c for c in children if c.get('is_active', True)]
+        inline = parent.get('inline_display', False)
         await query.edit_message_text(
             f"📂 **{parent['name']}**",
-            reply_markup=build_category_keyboard(active_children, parent_id=parent.get('parent')),
+            reply_markup=build_category_keyboard(active_children, parent_id=parent.get('parent'), inline=inline),
             parse_mode='Markdown'
         )
         return

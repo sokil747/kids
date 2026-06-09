@@ -64,6 +64,10 @@ class Category(models.Model):
         default=False,
         help_text="Feature this category in main menu"
     )
+    inline_display = models.BooleanField(
+        default=False,
+        help_text="Show subcategories as inline buttons (single row) instead of stacked"
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
