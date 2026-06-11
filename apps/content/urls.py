@@ -18,5 +18,6 @@ urlpatterns = [
     
     # Businesses
     path('businesses/', views.BusinessList.as_view(), name='business_list'),
+    path('businesses/<int:pk>/', views.BusinessDetail.as_view(), name='business_detail'),
     path('categories/<int:pk>/businesses/', views.BusinessByCategory.as_view(), name='category_businesses'),
 ]

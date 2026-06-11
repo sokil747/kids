@@ -153,13 +153,9 @@ class TelegramBotHandler:
     def get_business(self, business_id: int) -> dict | None:
         """Fetch a single business by ID."""
         try:
-            response = requests.get(f'{self.api_base}/businesses/')
+            response = requests.get(f'{self.api_base}/businesses/{business_id}/')
             if response.status_code == 200:
-                data = response.json()
-                items = data.get('results', []) if isinstance(data, dict) else data
-                for b in items:
-                    if b['id'] == business_id:
-                        return b
+                return response.json()
             return None
         except Exception as e:
             logger.error(f"Error fetching business: {e}")
@@ -530,30 +526,46 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await query.edit_message_text("Business not found.")
             return
 
-        fields = [
-            ('🏪', 'title'),
-            ('📍', 'address'),
-            ('🌐', 'geo_coordinates'),
-            ('📝', 'description'),
-            ('🛒', 'online_store'),
-            ('📘', 'facebook'),
-            ('📸', 'instagram'),
-            ('🎵', 'tiktok'),
-            ('🎬', 'youtube'),
-            ('📞', 'hotline'),
-        ]
-        lines = []
-        for emoji, key in fields:
-            val = business.get(key, '').strip()
-            if val:
-                lines.append(f"{emoji} {val}")
-        message = "\n".join(lines) if lines else f"🏪 **{business['title']}**"
+        lines = [f"🏪 **{business['title']}**"]
+        if business.get('description'):
+            lines.append(f"\n_{business['description']}_")
+        if business.get('address'):
+            lines.append(f"\n📍 {business['address']}")
+        if business.get('hotline'):
+            lines.append(f"📞 {business['hotline']}")
+        if business.get('online_store'):
+            lines.append(f"🛒 [Online Store]({business['online_store']})")
+        if business.get('facebook'):
+            lines.append(f"📘 [Facebook]({business['facebook']})")
+        if business.get('instagram'):
+            lines.append(f"📸 [Instagram]({business['instagram']})")
+        if business.get('tiktok'):
+            lines.append(f"🎵 [TikTok]({business['tiktok']})")
+        if business.get('youtube'):
+            lines.append(f"🎬 [YouTube]({business['youtube']})")
+
+        message = "\n".join(lines)
         cat_id = business.get('categories', [None])[0] if business.get('categories') else None
         keyboard = [[
             InlineKeyboardButton(back_text, callback_data=f"back_{cat_id}"),
             InlineKeyboardButton(main_menu_text, callback_data="main_menu")
         ]]
-        await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+
+        logo = business.get('logo')
+        if logo:
+            await context.bot.send_photo(
+                chat_id=query.message.chat_id,
+                photo=logo,
+                caption=message,
+                parse_mode='Markdown',
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+        else:
+            await query.edit_message_text(
+                message,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
         return
 
     if data.startswith("rate_"):

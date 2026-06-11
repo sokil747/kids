@@ -108,6 +108,13 @@ class BusinessList(generics.ListAPIView):
         return Business.objects.filter(is_active=True).order_by('order', '-created_at')
 
 
+class BusinessDetail(generics.RetrieveAPIView):
+    """Get a single business by ID."""
+    serializer_class = BusinessSerializer
+    permission_classes = [permissions.AllowAny]
+    queryset = Business.objects.filter(is_active=True)
+
+
 class BusinessByCategory(generics.ListAPIView):
     """Get businesses for a specific category."""
     serializer_class = BusinessSerializer
