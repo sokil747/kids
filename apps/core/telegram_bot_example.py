@@ -70,6 +70,20 @@ class TelegramBotHandler:
             logger.error(f"Error checking access: {e}")
             return False
 
+    def get_tags(self) -> list:
+        """Fetch all active tags from backend."""
+        try:
+            response = requests.get(f'{self.api_base}/tags/')
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, dict):
+                    return data.get('results', [])
+                return data
+            return []
+        except Exception as e:
+            logger.error(f"Error fetching tags: {e}")
+            return []
+
     def get_categories(self) -> list:
         """Fetch top-level categories from backend."""
         try:
@@ -143,27 +157,40 @@ class TelegramBotHandler:
 bot_handler = TelegramBotHandler()
 
 
-def category_label(cat: dict) -> str:
+def category_label(cat: dict, flag_prefix: str = "") -> str:
     name = cat['name']
+    if flag_prefix:
+        name = f"{flag_prefix}{name}"
     if name and ord(name[0]) >= 128:
         return name
     emoji = "📂" if cat.get('children') else "📁"
     return f"{emoji} {name}"
 
 
-def build_category_keyboard(categories: list, parent_id: int = None, inline: bool = False) -> InlineKeyboardMarkup:
+def build_tags_keyboard(tags: list) -> InlineKeyboardMarkup:
+    keyboard = []
+    row = []
+    for tag in tags:
+        label = f"{tag.get('flag_unicode', '') or '🏷️'} {tag['name']}".strip()
+        row.append(InlineKeyboardButton(label, callback_data=f"tag_{tag['id']}"))
+    if row:
+        keyboard.append(row)
+    return InlineKeyboardMarkup(keyboard)
+
+
+def build_category_keyboard(categories: list, parent_id: int = None, inline: bool = False, flag_prefix: str = "") -> InlineKeyboardMarkup:
     """Build inline keyboard for a list of categories."""
     keyboard = []
     if inline:
         row = []
         for cat in categories:
-            row.append(InlineKeyboardButton(category_label(cat), callback_data=f"cat_{cat['id']}"))
+            row.append(InlineKeyboardButton(category_label(cat, flag_prefix), callback_data=f"cat_{cat['id']}"))
         if row:
             keyboard.append(row)
     else:
         for cat in categories:
             keyboard.append([
-                InlineKeyboardButton(category_label(cat), callback_data=f"cat_{cat['id']}")
+                InlineKeyboardButton(category_label(cat, flag_prefix), callback_data=f"cat_{cat['id']}")
             ])
     nav = []
     if parent_id is not None:
@@ -202,13 +229,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = bot_handler.bot_settings.authorized_welcome_message if bot_handler.bot_settings else "Welcome to the bot!"
     await update.message.reply_text(message)
 
-    categories = bot_handler.get_categories()
-    if categories:
-        cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
+    context.user_data.pop('selected_tag', None)
+    tags = bot_handler.get_tags()
+    if tags:
         await update.message.reply_text(
-            cta,
-            reply_markup=build_category_keyboard(categories, inline=True)
+            "🌍 Choose a country:",
+            reply_markup=build_tags_keyboard(tags)
         )
+    else:
+        cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
+        categories = bot_handler.get_categories()
+        if categories:
+            await update.message.reply_text(cta, reply_markup=build_category_keyboard(categories, inline=True))
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -233,15 +265,20 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def categories_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Show list of categories."""
-    categories = bot_handler.get_categories()
-    if categories:
-        cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
+    tags = bot_handler.get_tags()
+    if tags:
+        context.user_data.pop('selected_tag', None)
         await update.message.reply_text(
-            cta,
-            reply_markup=build_category_keyboard(categories, inline=True)
+            "🌍 Choose a country:",
+            reply_markup=build_tags_keyboard(tags)
         )
     else:
-        await update.message.reply_text("No categories available.")
+        categories = bot_handler.get_categories()
+        if categories:
+            cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
+            await update.message.reply_text(cta, reply_markup=build_category_keyboard(categories, inline=True))
+        else:
+            await update.message.reply_text("No categories available.")
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -251,16 +288,47 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     await query.answer()
 
     if data == "main_menu":
-        categories = bot_handler.get_categories()
-        if categories:
-            cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
+        context.user_data.pop('selected_tag', None)
+        tags = bot_handler.get_tags()
+        if tags:
             await query.edit_message_text(
-                cta,
-                reply_markup=build_category_keyboard(categories, inline=True)
+                "🌍 Choose a country:",
+                reply_markup=build_tags_keyboard(tags)
             )
         else:
-            await query.edit_message_text("No categories available.")
+            await query.edit_message_text("No tags configured.")
         return
+
+    if data.startswith("tag_"):
+        tag_id = int(data.split("_")[1])
+        all_tags = bot_handler.get_tags()
+        selected_tag = next((t for t in all_tags if t['id'] == tag_id), None)
+        if not selected_tag:
+            await query.edit_message_text("Tag not found.")
+            return
+
+        context.user_data['selected_tag'] = selected_tag
+        categories = bot_handler.get_categories()
+        flag_prefix = ""
+        if bot_handler.bot_settings and bot_handler.bot_settings.show_tag_flag_on_categories:
+            flag_prefix = selected_tag.get('flag_unicode', '')
+
+        cats_for_tag = [c for c in categories if tag_id in c.get('tags', [])]
+        if cats_for_tag:
+            cta = selected_tag.get('flag_unicode', '') + " " + selected_tag['name']
+            await query.edit_message_text(
+                cta.strip(),
+                reply_markup=build_category_keyboard(cats_for_tag, inline=True, flag_prefix=flag_prefix)
+            )
+        else:
+            await query.edit_message_text(f"No categories available for {selected_tag['name']}.")
+        return
+
+    flag_prefix = ""
+    if bot_handler.bot_settings and bot_handler.bot_settings.show_tag_flag_on_categories:
+        selected_tag = context.user_data.get('selected_tag')
+        if selected_tag:
+            flag_prefix = selected_tag.get('flag_unicode', '')
 
     if data.startswith("cat_"):
         category_id = int(data.split("_")[1])
@@ -284,12 +352,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 if inline:
                     row = []
                     for child in children:
-                        row.append(InlineKeyboardButton(category_label(child), callback_data=f"cat_{child['id']}"))
+                        row.append(InlineKeyboardButton(category_label(child, flag_prefix), callback_data=f"cat_{child['id']}"))
                     if row:
                         child_rows.append(row)
                 else:
                     for child in children:
-                        child_rows.append([InlineKeyboardButton(category_label(child), callback_data=f"cat_{child['id']}")])
+                        child_rows.append([InlineKeyboardButton(category_label(child, flag_prefix), callback_data=f"cat_{child['id']}")])
 
                 nav_row = [
                     InlineKeyboardButton("🔙 Back", callback_data="back_main"),
@@ -301,7 +369,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**"
                 await query.message.reply_text(
                     cta,
-                    reply_markup=build_category_keyboard(children, parent_id=category.get('parent'), inline=inline),
+                    reply_markup=build_category_keyboard(children, parent_id=category.get('parent'), inline=inline, flag_prefix=flag_prefix),
                     parse_mode='Markdown'
                 )
         elif contents_data:
@@ -319,24 +387,24 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return
 
     if data.startswith("back_main"):
-        categories = bot_handler.get_categories()
-        if categories:
-            cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
+        tags = bot_handler.get_tags()
+        if tags:
+            context.user_data.pop('selected_tag', None)
             await query.edit_message_text(
-                cta,
-                reply_markup=build_category_keyboard(categories, inline=True)
+                "🌍 Choose a country:",
+                reply_markup=build_tags_keyboard(tags)
             )
         return
 
     if data.startswith("back_"):
         parent_id = data.split("_")[1]
         if parent_id == "None":
-            categories = bot_handler.get_categories()
-            if categories:
-                cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
+            tags = bot_handler.get_tags()
+            if tags:
+                context.user_data.pop('selected_tag', None)
                 await query.edit_message_text(
-                    cta,
-                    reply_markup=build_category_keyboard(categories, inline=True)
+                    "🌍 Choose a country:",
+                    reply_markup=build_tags_keyboard(tags)
                 )
             return
 
@@ -351,7 +419,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         cta = parent.get('cta_message', '').strip() or f"📂 **{parent['name']}**"
         await query.edit_message_text(
             cta,
-            reply_markup=build_category_keyboard(active_children, parent_id=parent.get('parent'), inline=inline),
+            reply_markup=build_category_keyboard(active_children, parent_id=parent.get('parent'), inline=inline, flag_prefix=flag_prefix),
             parse_mode='Markdown'
         )
         return
@@ -422,7 +490,7 @@ def main() -> None:
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("categories", categories_command))
 
-    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(cat_|content_|back_main|back_|main_menu|rate_)'))
+    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(tag_|cat_|content_|back_main|back_|main_menu|rate_)'))
 
     application.run_polling()
 

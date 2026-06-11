@@ -2,8 +2,15 @@
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Category, Content, ContentRating
-from .serializers import CategorySerializer, ContentSerializer, ContentRatingSerializer
+from .models import Tag, Category, Content, ContentRating
+from .serializers import TagSerializer, CategorySerializer, ContentSerializer, ContentRatingSerializer
+
+
+class TagsList(generics.ListAPIView):
+    """Get all active tags."""
+    queryset = Tag.objects.filter(is_active=True).order_by('order')
+    serializer_class = TagSerializer
+    permission_classes = [permissions.AllowAny]
 
 
 class CategoriesList(generics.ListCreateAPIView):
@@ -12,11 +19,15 @@ class CategoriesList(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
     def get_queryset(self):
-        """Return only active main categories."""
-        return Category.objects.filter(
+        """Return only active main categories, optionally filtered by tag."""
+        qs = Category.objects.filter(
             parent__isnull=True,
             is_active=True
         ).order_by('order')
+        tag_id = self.request.query_params.get('tag_id')
+        if tag_id:
+            qs = qs.filter(tags__id=tag_id)
+        return qs
 
 
 class CategoryDetail(generics.RetrieveUpdateDestroyAPIView):

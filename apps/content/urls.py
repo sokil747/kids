@@ -3,6 +3,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Tags
+    path('tags/', views.TagsList.as_view(), name='tags_list'),
+    
     # Categories
     path('categories/', views.CategoriesList.as_view(), name='categories_list'),
     path('categories/<int:pk>/', views.CategoryDetail.as_view(), name='category_detail'),

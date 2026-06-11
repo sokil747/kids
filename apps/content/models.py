@@ -7,6 +7,28 @@ from django.utils.text import slugify
 from django.core.exceptions import ValidationError
 
 
+class Tag(models.Model):
+    """
+    Country tags shown at the top level of the bot menu.
+    After selecting a tag, associated categories are shown.
+    """
+    name = models.CharField(max_length=200, help_text="Tag name (e.g. Ukraine)")
+    slug = models.SlugField(unique=True, help_text="URL-friendly identifier")
+    flag_unicode = models.CharField(
+        max_length=10, blank=True,
+        help_text="Unicode flag character (e.g. 🇺🇦, 🇵🇱)"
+    )
+    order = models.PositiveIntegerField(default=0, help_text="Display order")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order', 'name']
+        db_table = 'content_tag'
+
+    def __str__(self):
+        return f"{self.flag_unicode or ''} {self.name}".strip()
+
+
 class Category(models.Model):
     """
     Hierarchical category structure for organizing content.
@@ -40,6 +62,12 @@ class Category(models.Model):
         blank=True,
         related_name='children',
         help_text="Parent category for hierarchy"
+    )
+    tags = models.ManyToManyField(
+        Tag,
+        related_name='categories',
+        blank=True,
+        help_text="Country tags for this category"
     )
     
     # Media

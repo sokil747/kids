@@ -5,7 +5,21 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import Category, Content, ContentRating
+from .models import Tag, Category, Content, ContentRating
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    """Admin for country tags."""
+    list_display = ('flag_display', 'name', 'order', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+    prepopulated_fields = {'slug': ('name',)}
+    ordering = ['order', 'name']
+
+    def flag_display(self, obj):
+        return obj.flag_unicode or '—'
+    flag_display.short_description = 'Flag'
 
 
 @admin.register(Category)
@@ -17,8 +31,8 @@ class CategoryAdmin(admin.ModelAdmin):
             'fields': ('name', 'slug', 'description', 'cta_message')
         }),
         ('Hierarchy', {
-            'fields': ('parent',),
-            'description': 'Select a parent category to create subcategories'
+            'fields': ('parent', 'tags'),
+            'description': 'Select parent for hierarchy and tags for country association'
         }),
         ('Media', {
             'fields': ('icon', 'thumbnail'),
@@ -39,6 +53,7 @@ class CategoryAdmin(admin.ModelAdmin):
     search_fields = ('name', 'slug', 'description')
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ('created_at', 'updated_at')
+    filter_horizontal = ('tags',)
     
     def hierarchy_display(self, obj):
         """Display category with hierarchy indentation."""

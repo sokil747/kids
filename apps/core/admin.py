@@ -28,8 +28,8 @@ class BotSettingsAdmin(admin.ModelAdmin):
             'description': 'Customize welcome messages for different user types'
         }),
         ('Navigation', {
-            'fields': ('root_cta_message',),
-            'description': 'Call-to-action text shown at the top of the main menu'
+            'fields': ('root_cta_message', 'show_tag_flag_on_categories'),
+            'description': 'Configure navigation and display options'
         }),
         ('Additional Info', {
             'fields': ('description',),

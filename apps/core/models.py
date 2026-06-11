@@ -76,6 +76,10 @@ class BotSettings(models.Model):
         default="Choose category:",
         help_text="Call-to-action message shown at the main menu (above top-level categories)"
     )
+    show_tag_flag_on_categories = models.BooleanField(
+        default=False,
+        help_text="Prepend the selected tag's flag to category names displayed in the bot"
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
