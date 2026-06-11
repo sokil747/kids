@@ -5,13 +5,13 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import Tag, Category, Content, ContentRating
+from .models import Tag, Category, Content, ContentRating, Business
 
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     """Admin for country tags."""
-    list_display = ('flag_display', 'name', 'order', 'is_active_badge')
+    list_display = ('flag_display', 'name', 'order', 'is_active', 'is_active_badge')
     list_display_links = ('name',)
     list_filter = ('is_active',)
     search_fields = ('name',)
@@ -282,3 +282,51 @@ class ContentRatingAdmin(admin.ModelAdmin):
             stars
         )
     rating_display.short_description = 'Rating'
+
+
+@admin.register(Business)
+class BusinessAdmin(admin.ModelAdmin):
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'logo', 'description')
+        }),
+        ('Contact & Location', {
+            'fields': ('address', 'geo_coordinates', 'hotline'),
+        }),
+        ('Social Media & Links', {
+            'fields': ('online_store', 'facebook', 'instagram', 'tiktok', 'youtube'),
+            'classes': ('collapse',)
+        }),
+        ('Organization', {
+            'fields': ('tags', 'categories', 'order')
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+    list_display = ('title', 'business_tags', 'business_categories', 'is_active_badge', 'updated_at')
+    list_filter = ('is_active', 'tags', 'categories')
+    search_fields = ('title', 'description', 'address')
+    readonly_fields = ('created_at', 'updated_at')
+    filter_horizontal = ('tags', 'categories')
+
+    def business_tags(self, obj):
+        return ", ".join(str(t) for t in obj.tags.all()) or "—"
+    business_tags.short_description = 'Tags'
+
+    def business_categories(self, obj):
+        return ", ".join(str(c) for c in obj.categories.all()[:3]) or "—"
+    business_categories.short_description = 'Categories'
+
+    def is_active_badge(self, obj):
+        color = '#28a745' if obj.is_active else '#dc3545'
+        status = 'Active' if obj.is_active else 'Inactive'
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>',
+            color, status
+        )
+    is_active_badge.short_description = 'Status'

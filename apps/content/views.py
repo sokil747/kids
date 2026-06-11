@@ -2,8 +2,8 @@
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Tag, Category, Content, ContentRating
-from .serializers import TagSerializer, CategorySerializer, ContentSerializer, ContentRatingSerializer
+from .models import Tag, Category, Content, ContentRating, Business
+from .serializers import TagSerializer, CategorySerializer, ContentSerializer, ContentRatingSerializer, BusinessSerializer
 
 
 class TagsList(generics.ListAPIView):
@@ -97,3 +97,25 @@ class RateContent(generics.CreateAPIView):
         
         serializer = self.get_serializer(rating_obj)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class BusinessList(generics.ListAPIView):
+    """Get all active businesses."""
+    serializer_class = BusinessSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Business.objects.filter(is_active=True).order_by('order', '-created_at')
+
+
+class BusinessByCategory(generics.ListAPIView):
+    """Get businesses for a specific category."""
+    serializer_class = BusinessSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        category_id = self.kwargs['pk']
+        return Business.objects.filter(
+            categories__id=category_id,
+            is_active=True
+        ).order_by('order', '-created_at')

@@ -312,3 +312,32 @@ class ContentRating(models.Model):
     
     def __str__(self):
         return f"{self.content.title} - {self.rating}★"
+
+
+class Business(models.Model):
+    logo = models.ImageField(upload_to='business_logos/', blank=True, null=True, help_text="Business logo")
+    title = models.CharField(max_length=300, help_text="Business name")
+    address = models.TextField(blank=True, help_text="Physical address")
+    geo_coordinates = models.CharField(max_length=100, blank=True, help_text="Coordinates (lat,lng) — auto-detected from address but can be edited")
+    description = models.TextField(blank=True, help_text="Business description")
+    online_store = models.URLField(blank=True, help_text="Online store URL")
+    facebook = models.URLField(blank=True, help_text="Facebook page URL")
+    instagram = models.URLField(blank=True, help_text="Instagram URL")
+    tiktok = models.URLField(blank=True, help_text="TikTok URL")
+    youtube = models.URLField(blank=True, help_text="YouTube URL")
+    hotline = models.CharField(max_length=100, blank=True, help_text="Hotline phone number")
+
+    tags = models.ManyToManyField(Tag, related_name='businesses', blank=True, help_text="Country tags")
+    categories = models.ManyToManyField(Category, related_name='businesses', blank=True, help_text="Associated categories")
+
+    order = models.PositiveIntegerField(default=0, help_text="Display order")
+    is_active = models.BooleanField(default=True, help_text="Publish/unpublish")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', '-created_at']
+        db_table = 'content_business'
+
+    def __str__(self):
+        return self.title

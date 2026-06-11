@@ -1,6 +1,6 @@
 """Serializers for content API."""
 from rest_framework import serializers
-from .models import Tag, Category, Content, ContentRating
+from .models import Tag, Category, Content, ContentRating, Business
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -73,3 +73,17 @@ class ContentRatingSerializer(serializers.ModelSerializer):
         model = ContentRating
         fields = ['id', 'content', 'user_id', 'rating', 'comment', 'created_at']
         read_only_fields = ['created_at']
+
+
+class BusinessSerializer(serializers.ModelSerializer):
+    tags_detail = TagSerializer(source='tags', many=True, read_only=True)
+
+    class Meta:
+        model = Business
+        fields = [
+            'id', 'logo', 'title', 'address', 'geo_coordinates', 'description',
+            'online_store', 'facebook', 'instagram', 'tiktok', 'youtube', 'hotline',
+            'tags', 'tags_detail', 'categories',
+            'order', 'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']

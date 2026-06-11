@@ -136,6 +136,35 @@ class TelegramBotHandler:
             logger.error(f"Error fetching content: {e}")
             return {}
 
+    def get_category_businesses(self, category_id: int) -> list:
+        """Fetch businesses for a category."""
+        try:
+            response = requests.get(f'{self.api_base}/categories/{category_id}/businesses/')
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, dict):
+                    return data.get('results', [])
+                return data
+            return []
+        except Exception as e:
+            logger.error(f"Error fetching businesses: {e}")
+            return []
+
+    def get_business(self, business_id: int) -> dict | None:
+        """Fetch a single business by ID."""
+        try:
+            response = requests.get(f'{self.api_base}/businesses/')
+            if response.status_code == 200:
+                data = response.json()
+                items = data.get('results', []) if isinstance(data, dict) else data
+                for b in items:
+                    if b['id'] == business_id:
+                        return b
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching business: {e}")
+            return None
+
     def rate_content(self, content_id: int, user_id: int, rating: int, comment: str = ''):
         """Submit rating for content."""
         try:
@@ -338,6 +367,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         children = category.get('children', [])
         contents_data = bot_handler.get_category_contents(category_id)
+        businesses_data = bot_handler.get_category_businesses(category_id)
         expand = category.get('expand_children_inline', True)
 
         if children:
@@ -371,18 +401,21 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     reply_markup=build_category_keyboard(children, parent_id=category.get('parent'), inline=inline, flag_prefix=flag_prefix),
                     parse_mode='Markdown'
                 )
-        elif contents_data:
-            await query.edit_message_text(
-                f"📖 Content in **{category['name']}**:",
-                reply_markup=build_content_keyboard(contents_data, parent_id=category_id),
-                parse_mode='Markdown'
-            )
+        elif contents_data or businesses_data:
+            keyboard = []
+            for c in contents_data[:10]:
+                keyboard.append([InlineKeyboardButton(f"📄 {c['title']}", callback_data=f"content_{c['id']}")])
+            for b in businesses_data[:10]:
+                keyboard.append([InlineKeyboardButton(f"🏪 {b['title']}", callback_data=f"biz_{b['id']}")])
+            keyboard.append([
+                InlineKeyboardButton("🔙 Back", callback_data=f"back_{category.get('parent') or 'None'}"),
+                InlineKeyboardButton("🏠 Main menu", callback_data="main_menu")
+            ])
+            name = category.get('cta_message', '').strip() or f"**{category['name']}**"
+            await query.edit_message_text(name, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
         else:
-            cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**\n\nNo subcategories or content yet."
-            await query.edit_message_text(
-                cta,
-                parse_mode='Markdown'
-            )
+            cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**\n\nNo items yet."
+            await query.edit_message_text(cta, parse_mode='Markdown')
         return
 
     if data.startswith("back_main"):
@@ -460,6 +493,39 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
         return
 
+    if data.startswith("biz_"):
+        biz_id = int(data.split("_")[1])
+        business = bot_handler.get_business(biz_id)
+        if not business:
+            await query.edit_message_text("Business not found.")
+            return
+
+        fields = [
+            ('🏪', 'title'),
+            ('📍', 'address'),
+            ('🌐', 'geo_coordinates'),
+            ('📝', 'description'),
+            ('🛒', 'online_store'),
+            ('📘', 'facebook'),
+            ('📸', 'instagram'),
+            ('🎵', 'tiktok'),
+            ('🎬', 'youtube'),
+            ('📞', 'hotline'),
+        ]
+        lines = []
+        for emoji, key in fields:
+            val = business.get(key, '').strip()
+            if val:
+                lines.append(f"{emoji} {val}")
+        message = "\n".join(lines) if lines else f"🏪 **{business['title']}**"
+        cat_id = business.get('categories', [None])[0] if business.get('categories') else None
+        keyboard = [[
+            InlineKeyboardButton("🔙 Back", callback_data=f"back_{cat_id}"),
+            InlineKeyboardButton("🏠 Main menu", callback_data="main_menu")
+        ]]
+        await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+        return
+
     if data.startswith("rate_"):
         parts = data.split("_")
         content_id = int(parts[1])
@@ -489,7 +555,7 @@ def main() -> None:
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("categories", categories_command))
 
-    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(tag_|cat_|content_|back_main|back_|main_menu|rate_)'))
+    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(tag_|cat_|content_|back_main|back_|main_menu|rate_|biz_)'))
 
     application.run_polling()
 

@@ -15,4 +15,8 @@ urlpatterns = [
     path('content/', views.ContentList.as_view(), name='content_list'),
     path('content/<int:pk>/', views.ContentDetail.as_view(), name='content_detail'),
     path('content/<int:pk>/rate/', views.RateContent.as_view(), name='rate_content'),
+    
+    # Businesses
+    path('businesses/', views.BusinessList.as_view(), name='business_list'),
+    path('categories/<int:pk>/businesses/', views.BusinessByCategory.as_view(), name='category_businesses'),
 ]
