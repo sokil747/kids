@@ -11,15 +11,38 @@ from .models import Tag, Category, Content, ContentRating
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     """Admin for country tags."""
-    list_display = ('flag_display', 'name', 'order', 'is_active')
+    list_display = ('flag_display', 'name', 'order', 'is_active_badge')
+    list_display_links = ('name',)
     list_filter = ('is_active',)
     search_fields = ('name',)
     prepopulated_fields = {'slug': ('name',)}
     ordering = ['order', 'name']
+    list_editable = ('order', 'is_active')
+
+    actions = ['enable_tags', 'disable_tags']
 
     def flag_display(self, obj):
         return obj.flag_unicode or '—'
     flag_display.short_description = 'Flag'
+
+    def is_active_badge(self, obj):
+        color = '#28a745' if obj.is_active else '#dc3545'
+        status = 'Active' if obj.is_active else 'Inactive'
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>',
+            color, status
+        )
+    is_active_badge.short_description = 'Status'
+
+    def enable_tags(self, request, queryset):
+        queryset.update(is_active=True)
+        self.message_user(request, f'{queryset.count()} tag(s) enabled.')
+    enable_tags.short_description = 'Enable selected tags'
+
+    def disable_tags(self, request, queryset):
+        queryset.update(is_active=False)
+        self.message_user(request, f'{queryset.count()} tag(s) disabled.')
+    disable_tags.short_description = 'Disable selected tags'
 
 
 @admin.register(Category)
