@@ -248,6 +248,7 @@ def build_content_keyboard(contents: list, parent_id: int, back_text: str = "�
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start command."""
     user = update.effective_user
+    bot_handler.load_bot_settings()
     bt = bot_handler.bot_settings
     back_text = bt.back_button_text if bt else "🔙 Back"
     main_menu_text = bt.main_menu_button_text if bt else "🏠 Main menu"
@@ -306,6 +307,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def categories_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Show list of categories."""
+    bot_handler.load_bot_settings()
     bt = bot_handler.bot_settings
     back_text = bt.back_button_text if bt else "🔙 Back"
     main_menu_text = bt.main_menu_button_text if bt else "🏠 Main menu"
@@ -338,6 +340,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     data = query.data
     await query.answer()
 
+    bot_handler.load_bot_settings()
     bt = bot_handler.bot_settings
     back_text = bt.back_button_text if bt else "🔙 Back"
     main_menu_text = bt.main_menu_button_text if bt else "🏠 Main menu"
