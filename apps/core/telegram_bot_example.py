@@ -207,15 +207,16 @@ def build_tags_keyboard(tags: list) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 
-def build_category_keyboard(categories: list, parent_id: int = None, inline: bool = False, flag_prefix: str = "") -> InlineKeyboardMarkup:
+def build_category_keyboard(categories: list, parent_id: int = None, inline: bool = False, flag_prefix: str = "", back_text: str = "🔙 Back", main_menu_text: str = "🏠 Main menu") -> InlineKeyboardMarkup:
     """Build inline keyboard for a list of categories."""
     keyboard = []
     if inline:
         row = []
-        for cat in categories:
+        for i, cat in enumerate(categories):
             row.append(InlineKeyboardButton(category_label(cat, flag_prefix), callback_data=f"cat_{cat['id']}"))
-        if row:
-            keyboard.append(row)
+            if len(row) == 2 or i == len(categories) - 1:
+                keyboard.append(row)
+                row = []
     else:
         for cat in categories:
             keyboard.append([
@@ -223,14 +224,14 @@ def build_category_keyboard(categories: list, parent_id: int = None, inline: boo
             ])
     nav = []
     if parent_id is not None:
-        nav.append(InlineKeyboardButton("🔙 Back", callback_data=f"back_{parent_id}"))
-    nav.append(InlineKeyboardButton("🏠 Main menu", callback_data="main_menu"))
+        nav.append(InlineKeyboardButton(back_text, callback_data=f"back_{parent_id}"))
+    nav.append(InlineKeyboardButton(main_menu_text, callback_data="main_menu"))
     if nav:
         keyboard.append(nav)
     return InlineKeyboardMarkup(keyboard)
 
 
-def build_content_keyboard(contents: list, parent_id: int) -> InlineKeyboardMarkup:
+def build_content_keyboard(contents: list, parent_id: int, back_text: str = "🔙 Back", main_menu_text: str = "🏠 Main menu") -> InlineKeyboardMarkup:
     """Build inline keyboard for a list of content items."""
     keyboard = []
     for c in contents[:10]:
@@ -238,8 +239,8 @@ def build_content_keyboard(contents: list, parent_id: int) -> InlineKeyboardMark
             InlineKeyboardButton(f"📄 {c['title']}", callback_data=f"content_{c['id']}")
         ])
     keyboard.append([
-        InlineKeyboardButton("🔙 Back", callback_data=f"back_{parent_id}"),
-        InlineKeyboardButton("🏠 Main menu", callback_data="main_menu")
+        InlineKeyboardButton(back_text, callback_data=f"back_{parent_id}"),
+        InlineKeyboardButton(main_menu_text, callback_data="main_menu")
     ])
     return InlineKeyboardMarkup(keyboard)
 
@@ -247,6 +248,9 @@ def build_content_keyboard(contents: list, parent_id: int) -> InlineKeyboardMark
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start command."""
     user = update.effective_user
+    bt = bot_handler.bot_settings
+    back_text = bt.back_button_text if bt else "🔙 Back"
+    main_menu_text = bt.main_menu_button_text if bt else "🏠 Main menu"
     bot_user = await bot_handler.track_user(user.id, user.username)
     has_access = bot_handler.check_access(user.id)
 
@@ -266,10 +270,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             reply_markup=build_tags_keyboard(tags)
         )
     else:
-        cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
+        bt = bot_handler.bot_settings
+        cta = bt.root_cta_message if bt else "Choose category:"
         categories = bot_handler.get_categories()
         if categories:
-            await update.message.reply_text(cta, reply_markup=build_category_keyboard(categories, inline=True))
+            await update.message.reply_text(
+                cta,
+                reply_markup=build_category_keyboard(
+                    categories, inline=True,
+                    back_text=back_text, main_menu_text=main_menu_text
+                )
+            )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -294,6 +305,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def categories_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Show list of categories."""
+    bt = bot_handler.bot_settings
+    back_text = bt.back_button_text if bt else "🔙 Back"
+    main_menu_text = bt.main_menu_button_text if bt else "🏠 Main menu"
     tags = bot_handler.get_tags()
     if tags:
         context.user_data.pop('selected_tag', None)
@@ -305,7 +319,13 @@ async def categories_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         categories = bot_handler.get_categories()
         if categories:
             cta = bot_handler.bot_settings.root_cta_message if bot_handler.bot_settings else "Choose category:"
-            await update.message.reply_text(cta, reply_markup=build_category_keyboard(categories, inline=True))
+            await update.message.reply_text(
+                cta,
+                reply_markup=build_category_keyboard(
+                    categories, inline=True,
+                    back_text=back_text, main_menu_text=main_menu_text
+                )
+            )
         else:
             await update.message.reply_text("No categories available.")
 
@@ -315,6 +335,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
     data = query.data
     await query.answer()
+
+    bt = bot_handler.bot_settings
+    back_text = bt.back_button_text if bt else "🔙 Back"
+    main_menu_text = bt.main_menu_button_text if bt else "🏠 Main menu"
 
     if data == "main_menu":
         context.user_data.pop('selected_tag', None)
@@ -346,7 +370,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             cta = flag_prefix + " " + selected_tag['name']
             await query.edit_message_text(
                 cta.strip(),
-                reply_markup=build_category_keyboard(categories, inline=True, flag_prefix=flag_prefix)
+                reply_markup=build_category_keyboard(categories, inline=True, flag_prefix=flag_prefix, back_text=back_text, main_menu_text=main_menu_text)
             )
         else:
             await query.edit_message_text("No categories available.")
@@ -389,8 +413,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                         child_rows.append([InlineKeyboardButton(category_label(child, flag_prefix), callback_data=f"cat_{child['id']}")])
 
                 nav_row = [
-                    InlineKeyboardButton("🔙 Back", callback_data="back_main"),
-                    InlineKeyboardButton("🏠 Main menu", callback_data="main_menu")
+                    InlineKeyboardButton(back_text, callback_data="back_main"),
+                    InlineKeyboardButton(main_menu_text, callback_data="main_menu")
                 ]
                 all_rows = base_rows + child_rows + [nav_row]
                 await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(all_rows))
@@ -398,7 +422,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**"
                 await query.message.reply_text(
                     cta,
-                    reply_markup=build_category_keyboard(children, parent_id=category.get('parent'), inline=inline, flag_prefix=flag_prefix),
+                    reply_markup=build_category_keyboard(children, parent_id=category.get('parent'), inline=inline, flag_prefix=flag_prefix, back_text=back_text, main_menu_text=main_menu_text),
                     parse_mode='Markdown'
                 )
         elif contents_data or businesses_data:
@@ -408,8 +432,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             for b in businesses_data[:10]:
                 keyboard.append([InlineKeyboardButton(f"🏪 {b['title']}", callback_data=f"biz_{b['id']}")])
             keyboard.append([
-                InlineKeyboardButton("🔙 Back", callback_data=f"back_{category.get('parent') or 'None'}"),
-                InlineKeyboardButton("🏠 Main menu", callback_data="main_menu")
+                InlineKeyboardButton(back_text, callback_data=f"back_{category.get('parent') or 'None'}"),
+                InlineKeyboardButton(main_menu_text, callback_data="main_menu")
             ])
             name = category.get('cta_message', '').strip() or f"**{category['name']}**"
             await query.edit_message_text(name, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
@@ -451,7 +475,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         cta = parent.get('cta_message', '').strip() or f"📂 **{parent['name']}**"
         await query.edit_message_text(
             cta,
-            reply_markup=build_category_keyboard(active_children, parent_id=parent.get('parent'), inline=inline, flag_prefix=flag_prefix),
+            reply_markup=build_category_keyboard(active_children, parent_id=parent.get('parent'), inline=inline, flag_prefix=flag_prefix, back_text=back_text, main_menu_text=main_menu_text),
             parse_mode='Markdown'
         )
         return
@@ -482,8 +506,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 InlineKeyboardButton("👌 3", callback_data=f"rate_{content_id}_3"),
             ],
             [
-                InlineKeyboardButton("🔙 Back", callback_data=f"back_{cat_id}"),
-                InlineKeyboardButton("🏠 Main menu", callback_data="main_menu")
+                InlineKeyboardButton(back_text, callback_data=f"back_{cat_id}"),
+                InlineKeyboardButton(main_menu_text, callback_data="main_menu")
             ]
         ]
         await query.edit_message_text(
@@ -520,8 +544,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         message = "\n".join(lines) if lines else f"🏪 **{business['title']}**"
         cat_id = business.get('categories', [None])[0] if business.get('categories') else None
         keyboard = [[
-            InlineKeyboardButton("🔙 Back", callback_data=f"back_{cat_id}"),
-            InlineKeyboardButton("🏠 Main menu", callback_data="main_menu")
+            InlineKeyboardButton(back_text, callback_data=f"back_{cat_id}"),
+            InlineKeyboardButton(main_menu_text, callback_data="main_menu")
         ]]
         await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
         return

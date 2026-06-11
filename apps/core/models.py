@@ -81,6 +81,18 @@ class BotSettings(models.Model):
         help_text="Prepend the selected tag's flag to category names displayed in the bot"
     )
     
+    # Navigation button texts
+    back_button_text = models.CharField(
+        max_length=100,
+        default="🔙 Back",
+        help_text="Text for the 'Back' navigation button"
+    )
+    main_menu_button_text = models.CharField(
+        max_length=100,
+        default="🏠 Main menu",
+        help_text="Text for the 'Main menu' navigation button"
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
