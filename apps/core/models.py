@@ -92,6 +92,11 @@ class BotSettings(models.Model):
         default="🏠 Main menu",
         help_text="Text for the 'Main menu' navigation button"
     )
+    tags_prompt_text = models.CharField(
+        max_length=200,
+        default="🌍 Choose a country:",
+        help_text="Prompt text shown above the tag/country selection"
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

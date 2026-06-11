@@ -251,6 +251,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     bt = bot_handler.bot_settings
     back_text = bt.back_button_text if bt else "🔙 Back"
     main_menu_text = bt.main_menu_button_text if bt else "🏠 Main menu"
+    tags_prompt = bt.tags_prompt_text if bt else "🌍 Choose a country:"
     bot_user = await bot_handler.track_user(user.id, user.username)
     has_access = bot_handler.check_access(user.id)
 
@@ -266,7 +267,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     tags = bot_handler.get_tags()
     if tags:
         await update.message.reply_text(
-            "🌍 Choose a country:",
+            tags_prompt,
             reply_markup=build_tags_keyboard(tags)
         )
     else:
@@ -308,11 +309,12 @@ async def categories_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     bt = bot_handler.bot_settings
     back_text = bt.back_button_text if bt else "🔙 Back"
     main_menu_text = bt.main_menu_button_text if bt else "🏠 Main menu"
+    tags_prompt = bt.tags_prompt_text if bt else "🌍 Choose a country:"
     tags = bot_handler.get_tags()
     if tags:
         context.user_data.pop('selected_tag', None)
         await update.message.reply_text(
-            "🌍 Choose a country:",
+            tags_prompt,
             reply_markup=build_tags_keyboard(tags)
         )
     else:
@@ -339,13 +341,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     bt = bot_handler.bot_settings
     back_text = bt.back_button_text if bt else "🔙 Back"
     main_menu_text = bt.main_menu_button_text if bt else "🏠 Main menu"
+    tags_prompt = bt.tags_prompt_text if bt else "🌍 Choose a country:"
 
     if data == "main_menu":
         context.user_data.pop('selected_tag', None)
         tags = bot_handler.get_tags()
         if tags:
             await query.edit_message_text(
-                "🌍 Choose a country:",
+                tags_prompt,
                 reply_markup=build_tags_keyboard(tags)
             )
         else:
@@ -447,7 +450,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if tags:
             context.user_data.pop('selected_tag', None)
             await query.edit_message_text(
-                "🌍 Choose a country:",
+                tags_prompt,
                 reply_markup=build_tags_keyboard(tags)
             )
         return
@@ -459,7 +462,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if tags:
                 context.user_data.pop('selected_tag', None)
                 await query.edit_message_text(
-                    "🌍 Choose a country:",
+                    tags_prompt,
                     reply_markup=build_tags_keyboard(tags)
                 )
             return

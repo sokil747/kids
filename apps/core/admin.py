@@ -28,7 +28,7 @@ class BotSettingsAdmin(admin.ModelAdmin):
             'description': 'Customize welcome messages for different user types'
         }),
         ('Navigation', {
-            'fields': ('root_cta_message', 'show_tag_flag_on_categories', 'back_button_text', 'main_menu_button_text'),
+            'fields': ('root_cta_message', 'tags_prompt_text', 'show_tag_flag_on_categories', 'back_button_text', 'main_menu_button_text'),
             'description': 'Configure navigation and display options'
         }),
         ('Additional Info', {
