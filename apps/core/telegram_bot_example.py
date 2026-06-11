@@ -464,7 +464,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 )
         else:
             cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**\n\nNo items yet."
-            await query.edit_message_text(cta, parse_mode='Markdown')
+            keyboard = [[
+                InlineKeyboardButton(back_text, callback_data=f"back_{category.get('parent') or 'None'}"),
+                InlineKeyboardButton(main_menu_text, callback_data="main_menu")
+            ]]
+            await query.edit_message_text(cta, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
         return
 
     if data.startswith("back_main"):
