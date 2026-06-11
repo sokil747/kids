@@ -136,10 +136,13 @@ class TelegramBotHandler:
             logger.error(f"Error fetching content: {e}")
             return {}
 
-    def get_category_businesses(self, category_id: int) -> list:
-        """Fetch businesses for a category."""
+    def get_category_businesses(self, category_id: int, tag_id: int = None) -> list:
+        """Fetch businesses for a category, optionally filtered by tag."""
         try:
-            response = requests.get(f'{self.api_base}/categories/{category_id}/businesses/')
+            url = f'{self.api_base}/categories/{category_id}/businesses/'
+            if tag_id:
+                url += f'?tag_id={tag_id}'
+            response = requests.get(url)
             if response.status_code == 200:
                 data = response.json()
                 if isinstance(data, dict):
@@ -393,7 +396,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         children = category.get('children', [])
         contents_data = bot_handler.get_category_contents(category_id)
-        businesses_data = bot_handler.get_category_businesses(category_id)
+        selected_tag = context.user_data.get('selected_tag')
+        tag_id = selected_tag['id'] if selected_tag else None
+        businesses_data = bot_handler.get_category_businesses(category_id, tag_id=tag_id)
         expand = category.get('expand_children_inline', True)
 
         if children:
@@ -414,11 +419,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     for child in children:
                         child_rows.append([InlineKeyboardButton(category_label(child, flag_prefix), callback_data=f"cat_{child['id']}")])
 
-                nav_row = [
-                    InlineKeyboardButton(back_text, callback_data="back_main"),
-                    InlineKeyboardButton(main_menu_text, callback_data="main_menu")
-                ]
-                all_rows = base_rows + child_rows + [nav_row]
+                if inline:
+                    all_rows = base_rows + child_rows
+                else:
+                    all_rows = base_rows + child_rows + [[
+                        InlineKeyboardButton(back_text, callback_data="back_main"),
+                        InlineKeyboardButton(main_menu_text, callback_data="main_menu")
+                    ]]
                 await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(all_rows))
             else:
                 cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**"
@@ -428,17 +435,33 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     parse_mode='Markdown'
                 )
         elif contents_data or businesses_data:
-            keyboard = []
-            for c in contents_data[:10]:
-                keyboard.append([InlineKeyboardButton(f"📄 {c['title']}", callback_data=f"content_{c['id']}")])
-            for b in businesses_data[:10]:
-                keyboard.append([InlineKeyboardButton(f"🏪 {b['title']}", callback_data=f"biz_{b['id']}")])
-            keyboard.append([
-                InlineKeyboardButton(back_text, callback_data=f"back_{category.get('parent') or 'None'}"),
-                InlineKeyboardButton(main_menu_text, callback_data="main_menu")
-            ])
             name = category.get('cta_message', '').strip() or f"**{category['name']}**"
-            await query.edit_message_text(name, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+
+            if contents_data:
+                keyboard = []
+                for c in contents_data[:10]:
+                    keyboard.append([InlineKeyboardButton(f"📄 {c['title']}", callback_data=f"content_{c['id']}")])
+                keyboard.append([
+                    InlineKeyboardButton(back_text, callback_data=f"back_{category.get('parent') or 'None'}"),
+                    InlineKeyboardButton(main_menu_text, callback_data="main_menu")
+                ])
+                await query.edit_message_text(name, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+            else:
+                await query.edit_message_text(name, parse_mode='Markdown')
+
+            if businesses_data:
+                biz_keyboard = []
+                for b in businesses_data[:10]:
+                    biz_keyboard.append([InlineKeyboardButton(f"🏪 {b['title']}", callback_data=f"biz_{b['id']}_{category_id}")])
+                biz_keyboard.append([
+                    InlineKeyboardButton(back_text, callback_data=f"back_{category.get('parent') or 'None'}"),
+                    InlineKeyboardButton(main_menu_text, callback_data="main_menu")
+                ])
+                await query.message.reply_text(
+                    f"🏪 **Businesses in {category['name']}:**",
+                    reply_markup=InlineKeyboardMarkup(biz_keyboard),
+                    parse_mode='Markdown'
+                )
         else:
             cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**\n\nNo items yet."
             await query.edit_message_text(cta, parse_mode='Markdown')
@@ -520,7 +543,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return
 
     if data.startswith("biz_"):
-        biz_id = int(data.split("_")[1])
+        parts = data.split("_")
+        biz_id = int(parts[1])
+        cat_id = int(parts[2]) if len(parts) > 2 else None
         business = bot_handler.get_business(biz_id)
         if not business:
             await query.edit_message_text("Business not found.")
@@ -545,7 +570,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             lines.append(f"🎬 [YouTube]({business['youtube']})")
 
         message = "\n".join(lines)
-        cat_id = business.get('categories', [None])[0] if business.get('categories') else None
         keyboard = [[
             InlineKeyboardButton(back_text, callback_data=f"back_{cat_id}"),
             InlineKeyboardButton(main_menu_text, callback_data="main_menu")
@@ -561,7 +585,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
         else:
-            await query.edit_message_text(
+            await query.message.reply_text(
                 message,
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 parse_mode='Markdown'

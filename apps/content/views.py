@@ -116,13 +116,17 @@ class BusinessDetail(generics.RetrieveAPIView):
 
 
 class BusinessByCategory(generics.ListAPIView):
-    """Get businesses for a specific category."""
+    """Get businesses for a specific category, optionally filtered by tag."""
     serializer_class = BusinessSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         category_id = self.kwargs['pk']
-        return Business.objects.filter(
+        queryset = Business.objects.filter(
             categories__id=category_id,
             is_active=True
-        ).order_by('order', '-created_at')
+        )
+        tag_id = self.request.query_params.get('tag_id')
+        if tag_id:
+            queryset = queryset.filter(tags__id=tag_id)
+        return queryset.order_by('order', '-created_at')
