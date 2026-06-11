@@ -14,12 +14,10 @@ class CategorySerializer(serializers.ModelSerializer):
     
     children = serializers.SerializerMethodField()
     content_count = serializers.SerializerMethodField()
-    tags_detail = TagSerializer(source='tags', many=True, read_only=True)
-    
     class Meta:
         model = Category
         fields = [
-            'id', 'name', 'slug', 'description', 'cta_message', 'parent', 'tags', 'tags_detail',
+            'id', 'name', 'slug', 'description', 'cta_message', 'parent',
             'icon', 'thumbnail', 'order', 'is_active', 'is_featured', 'inline_display',
             'expand_children_inline',
             'children', 'content_count', 'created_at', 'updated_at'

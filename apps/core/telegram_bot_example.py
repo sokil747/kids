@@ -313,15 +313,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if bot_handler.bot_settings and bot_handler.bot_settings.show_tag_flag_on_categories:
             flag_prefix = selected_tag.get('flag_unicode', '')
 
-        cats_for_tag = [c for c in categories if tag_id in c.get('tags', [])]
-        if cats_for_tag:
-            cta = selected_tag.get('flag_unicode', '') + " " + selected_tag['name']
+        if categories:
+            cta = flag_prefix + " " + selected_tag['name']
             await query.edit_message_text(
                 cta.strip(),
-                reply_markup=build_category_keyboard(cats_for_tag, inline=True, flag_prefix=flag_prefix)
+                reply_markup=build_category_keyboard(categories, inline=True, flag_prefix=flag_prefix)
             )
         else:
-            await query.edit_message_text(f"No categories available for {selected_tag['name']}.")
+            await query.edit_message_text("No categories available.")
         return
 
     flag_prefix = ""

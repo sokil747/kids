@@ -63,13 +63,6 @@ class Category(models.Model):
         related_name='children',
         help_text="Parent category for hierarchy"
     )
-    tags = models.ManyToManyField(
-        Tag,
-        related_name='categories',
-        blank=True,
-        help_text="Country tags for this category"
-    )
-    
     # Media
     icon = models.ImageField(
         upload_to='category_icons/',

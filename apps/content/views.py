@@ -19,15 +19,11 @@ class CategoriesList(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
     def get_queryset(self):
-        """Return only active main categories, optionally filtered by tag."""
-        qs = Category.objects.filter(
+        """Return only active main categories."""
+        return Category.objects.filter(
             parent__isnull=True,
             is_active=True
         ).order_by('order')
-        tag_id = self.request.query_params.get('tag_id')
-        if tag_id:
-            qs = qs.filter(tags__id=tag_id)
-        return qs
 
 
 class CategoryDetail(generics.RetrieveUpdateDestroyAPIView):

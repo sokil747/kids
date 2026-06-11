@@ -31,8 +31,8 @@ class CategoryAdmin(admin.ModelAdmin):
             'fields': ('name', 'slug', 'description', 'cta_message')
         }),
         ('Hierarchy', {
-            'fields': ('parent', 'tags'),
-            'description': 'Select parent for hierarchy and tags for country association'
+            'fields': ('parent',),
+            'description': 'Select a parent category to create subcategories'
         }),
         ('Media', {
             'fields': ('icon', 'thumbnail'),
@@ -53,7 +53,6 @@ class CategoryAdmin(admin.ModelAdmin):
     search_fields = ('name', 'slug', 'description')
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ('created_at', 'updated_at')
-    filter_horizontal = ('tags',)
     
     def hierarchy_display(self, obj):
         """Display category with hierarchy indentation."""
