@@ -583,17 +583,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if logo:
             await context.bot.send_photo(
                 chat_id=query.message.chat_id,
-                photo=logo,
-                caption=message,
-                parse_mode='Markdown',
-                reply_markup=InlineKeyboardMarkup(keyboard)
+                photo=logo
             )
-        else:
-            await query.message.reply_text(
-                message,
-                reply_markup=InlineKeyboardMarkup(keyboard),
-                parse_mode='Markdown'
-            )
+        await query.message.reply_text(
+            message,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='Markdown'
+        )
         return
 
     if data.startswith("rate_"):
