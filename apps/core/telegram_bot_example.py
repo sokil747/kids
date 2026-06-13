@@ -535,7 +535,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 InlineKeyboardButton("👌 3", callback_data=f"rate_{content_id}_3"),
             ],
             [
-                InlineKeyboardButton(back_text, callback_data=f"back_{cat_id}"),
+                InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
                 InlineKeyboardButton(main_menu_text, callback_data="main_menu")
             ]
         ]
@@ -575,7 +575,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         message = "\n".join(lines)
         keyboard = [[
-            InlineKeyboardButton(back_text, callback_data=f"back_{cat_id}"),
+            InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
             InlineKeyboardButton(main_menu_text, callback_data="main_menu")
         ]]
 
