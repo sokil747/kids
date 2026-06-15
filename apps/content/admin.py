@@ -62,7 +62,7 @@ class CategoryAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Display Settings', {
-            'fields': ('order', 'is_active', 'is_featured', 'inline_display', 'expand_children_inline'),
+            'fields': ('order', 'is_active', 'is_featured', 'show_flag', 'inline_display', 'expand_children_inline'),
             'description': 'Expand in place shows children in the same message below parent buttons'
         }),
         ('Metadata', {

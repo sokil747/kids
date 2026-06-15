@@ -18,7 +18,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = [
             'id', 'name', 'slug', 'description', 'cta_message', 'parent',
-            'icon', 'thumbnail', 'order', 'is_active', 'is_featured', 'inline_display',
+            'icon', 'thumbnail', 'order', 'is_active', 'is_featured', 'show_flag', 'inline_display',
             'expand_children_inline',
             'children', 'content_count', 'created_at', 'updated_at'
         ]

@@ -187,12 +187,14 @@ bot_handler = TelegramBotHandler()
 
 def category_label(cat: dict, flag_prefix: str = "") -> str:
     name = cat['name']
-    if flag_prefix:
-        name = f"{flag_prefix}{name}"
-    if name and ord(name[0]) >= 128:
-        return name
-    emoji = "📂" if cat.get('children') else "📁"
-    return f"{emoji} {name}"
+    if cat.get('show_flag', True):
+        if flag_prefix:
+            name = f"{flag_prefix}{name}"
+        if name and ord(name[0]) >= 128:
+            return name
+        emoji = "📂" if cat.get('children') else "📁"
+        return f"{emoji} {name}"
+    return name
 
 
 def build_tags_keyboard(tags: list) -> InlineKeyboardMarkup:

@@ -98,6 +98,10 @@ class Category(models.Model):
         default=True,
         help_text="Show children in the same message below parent buttons (True) or send as a new message (False)"
     )
+    show_flag = models.BooleanField(
+        default=True,
+        help_text="Show flag emoji / tag flag at the start of the category name in the bot"
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
