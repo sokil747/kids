@@ -82,7 +82,7 @@ class BusinessSerializer(serializers.ModelSerializer):
         model = Business
         fields = [
             'id', 'logo', 'title', 'address', 'geo_coordinates', 'description',
-            'online_store', 'facebook', 'instagram', 'tiktok', 'youtube', 'hotline',
+            'online_store', 'facebook', 'instagram', 'tiktok', 'youtube', 'hotline', 'emoji',
             'tags', 'tags_detail', 'categories',
             'order', 'is_active', 'created_at', 'updated_at'
         ]

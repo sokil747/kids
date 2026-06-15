@@ -288,7 +288,7 @@ class ContentRatingAdmin(admin.ModelAdmin):
 class BusinessAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'logo', 'description')
+            'fields': ('title', 'logo', 'description', 'emoji')
         }),
         ('Contact & Location', {
             'fields': ('address', 'geo_coordinates', 'hotline'),

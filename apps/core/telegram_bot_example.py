@@ -462,7 +462,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if businesses_data:
                 biz_keyboard = []
                 for b in businesses_data[:10]:
-                    biz_keyboard.append([InlineKeyboardButton(f"🏪 {b['title']}", callback_data=f"biz_{b['id']}_{category_id}")])
+                    biz_keyboard.append([InlineKeyboardButton(f"{b.get('emoji', '🎁')} {b['title']}", callback_data=f"biz_{b['id']}_{category_id}")])
                 biz_keyboard.append([
                     InlineKeyboardButton(back_text, callback_data=f"back_{category.get('parent') or 'None'}"),
                     InlineKeyboardButton(main_menu_text, callback_data="main_menu")

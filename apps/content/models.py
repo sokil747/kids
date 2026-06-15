@@ -330,6 +330,8 @@ class Business(models.Model):
     tiktok = models.URLField(blank=True, help_text="TikTok URL")
     youtube = models.URLField(blank=True, help_text="YouTube URL")
     hotline = models.CharField(max_length=100, blank=True, help_text="Hotline phone number")
+    
+    emoji = models.CharField(max_length=10, blank=True, default="🎁", help_text="Emoji shown before the business name in bot lists (leave blank to hide)")
 
     tags = models.ManyToManyField(Tag, related_name='businesses', blank=True, help_text="Country tags")
     categories = models.ManyToManyField(Category, related_name='businesses', blank=True, help_text="Associated categories")
