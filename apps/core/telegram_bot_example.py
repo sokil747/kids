@@ -454,7 +454,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     InlineKeyboardButton(main_menu_text, callback_data="main_menu")
                 ])
                 await query.message.reply_text(
-                    "\u200b",
+                    "━━━━━━━━━━━━",
                     reply_markup=InlineKeyboardMarkup(keyboard),
                     parse_mode='Markdown'
                 )
@@ -468,7 +468,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     InlineKeyboardButton(main_menu_text, callback_data="main_menu")
                 ])
                 await query.message.reply_text(
-                    "\u200b",
+                    "━━━━━━━━━━━━",
                     reply_markup=InlineKeyboardMarkup(biz_keyboard),
                     parse_mode='Markdown'
                 )
@@ -496,7 +496,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     InlineKeyboardButton(main_menu_text, callback_data="main_menu")
                 ])
                 await query.message.reply_text(
-                    "\u200b",
+                    "━━━━━━━━━━━━",
                     reply_markup=InlineKeyboardMarkup(biz_keyboard),
                     parse_mode='Markdown'
                 )
