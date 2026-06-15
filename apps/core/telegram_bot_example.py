@@ -444,6 +444,34 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     reply_markup=build_category_keyboard(children, parent_id=category.get('parent'), inline=inline, flag_prefix=flag_prefix, back_text=back_text, main_menu_text=main_menu_text),
                     parse_mode='Markdown'
                 )
+
+            if contents_data:
+                keyboard = []
+                for c in contents_data[:10]:
+                    keyboard.append([InlineKeyboardButton(f"📄 {c['title']}", callback_data=f"content_{c['id']}")])
+                keyboard.append([
+                    InlineKeyboardButton(back_text, callback_data=f"back_{category.get('parent') or 'None'}"),
+                    InlineKeyboardButton(main_menu_text, callback_data="main_menu")
+                ])
+                await query.message.reply_text(
+                    "\u200b",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
+                )
+
+            if businesses_data:
+                biz_keyboard = []
+                for b in businesses_data[:10]:
+                    biz_keyboard.append([InlineKeyboardButton(f"{b.get('emoji', '🎁')} {b['title']}", callback_data=f"biz_{b['id']}_{category_id}")])
+                biz_keyboard.append([
+                    InlineKeyboardButton(back_text, callback_data=f"back_{category.get('parent') or 'None'}"),
+                    InlineKeyboardButton(main_menu_text, callback_data="main_menu")
+                ])
+                await query.message.reply_text(
+                    "\u200b",
+                    reply_markup=InlineKeyboardMarkup(biz_keyboard),
+                    parse_mode='Markdown'
+                )
         elif contents_data or businesses_data:
             name = category.get('cta_message', '').strip() or f"**{category['name']}**"
 
