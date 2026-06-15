@@ -63,6 +63,11 @@ class BotSettings(models.Model):
     )
     
     # Welcome messages
+    welcome_image = models.ImageField(
+        upload_to='welcome_images/',
+        blank=True, null=True,
+        help_text="Image sent with the welcome message"
+    )
     authorized_welcome_message = models.TextField(
         default="✨ Вас вітає InsiderKids — навіатор у світі індустрії дитячих товарів і розвиток !\n\n📢 Підписуйтесь, щоб не пропустити головне:\n🔔 InsiderKidsNews\nhttps://t.me/InsiderKidsNews\n\n📍 тренди | новини | огляди | події\n📱 Все найцікавіше в одній стрічці",
         help_text="Welcome message for authorized users"

@@ -261,6 +261,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     message = bot_handler.bot_settings.authorized_welcome_message if bot_handler.bot_settings else "Welcome to the bot!"
+    
+    welcome_image = bot_handler.bot_settings.welcome_image if bot_handler.bot_settings else None
+    if welcome_image:
+        try:
+            full_url = f"https://kids-genius.run.place{welcome_image.url}"
+            await context.bot.send_photo(
+                chat_id=update.message.chat_id,
+                photo=full_url
+            )
+        except Exception as e:
+            logger.error(f"Error sending welcome image: {e}")
+    
     await update.message.reply_text(message)
 
     context.user_data.pop('selected_tag', None)

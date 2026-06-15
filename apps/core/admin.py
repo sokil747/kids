@@ -23,7 +23,7 @@ class BotSettingsAdmin(admin.ModelAdmin):
             'description': 'Control who can access the bot'
         }),
         ('Welcome Messages', {
-            'fields': ('authorized_welcome_message', 'unauthorized_welcome_message'),
+            'fields': ('welcome_image', 'authorized_welcome_message', 'unauthorized_welcome_message'),
             'classes': ('wide',),
             'description': 'Customize welcome messages for different user types'
         }),
