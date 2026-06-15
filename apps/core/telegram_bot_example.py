@@ -422,6 +422,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 current_markup = query.message.reply_markup
                 base_rows = list(current_markup.inline_keyboard) if current_markup else []
 
+                nav_row = base_rows.pop() if base_rows and len(base_rows) > 0 else []
+
                 child_rows = []
                 if inline:
                     row = []
@@ -433,13 +435,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     for child in children:
                         child_rows.append([InlineKeyboardButton(category_label(child, flag_prefix), callback_data=f"cat_{child['id']}")])
 
-                if inline:
-                    all_rows = base_rows + child_rows
-                else:
-                    all_rows = base_rows + child_rows + [[
-                        InlineKeyboardButton(back_text, callback_data="back_main"),
-                        InlineKeyboardButton(main_menu_text, callback_data="main_menu")
-                    ]]
+                all_rows = base_rows + child_rows + ([nav_row] if nav_row else [])
                 await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(all_rows))
             else:
                 cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**"
