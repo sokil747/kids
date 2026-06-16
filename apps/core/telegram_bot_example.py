@@ -562,8 +562,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         if business.get('address'):
             lines.append(f"\n📍 {business['address']}")
-        if business.get('hotline'):
-            lines.append(f"📞 {business['hotline']}")
         if business.get('online_store'):
             lines.append(f"🛒 [Online Store]({business['online_store']})")
         if business.get('facebook'):
@@ -579,6 +577,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         keyboard = []
         if truncated:
             keyboard.append([InlineKeyboardButton("📖 Read full description", callback_data=f"desc_{biz_id}")])
+        hotline = business.get('hotline', '').strip()
+        if hotline:
+            label = business.get('hotline_label', '').strip() or "Гаряча лінія"
+            keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:{hotline}")])
         keyboard.append([
             InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
             InlineKeyboardButton(main_menu_text, callback_data="main_menu")

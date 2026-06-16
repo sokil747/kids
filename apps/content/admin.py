@@ -291,7 +291,7 @@ class BusinessAdmin(admin.ModelAdmin):
             'fields': ('title', 'logo', 'description', 'emoji')
         }),
         ('Contact & Location', {
-            'fields': ('address', 'geo_coordinates', 'hotline'),
+            'fields': ('address', 'geo_coordinates', 'hotline', 'hotline_label'),
         }),
         ('Social Media & Links', {
             'fields': ('online_store', 'facebook', 'instagram', 'tiktok', 'youtube'),
