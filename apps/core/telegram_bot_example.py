@@ -550,8 +550,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return
 
         lines = [f"🏪 **{business['title']}**"]
+        truncated = False
         if business.get('description'):
-            lines.append(f"\n_{business['description']}_")
+            desc = business['description']
+            truncated = len(desc) > 200
+            if truncated:
+                desc = desc[:200]
+            lines.append(f"\n_{desc}_")
+            if truncated:
+                lines.append(f"\n... 📖")
+
         if business.get('address'):
             lines.append(f"\n📍 {business['address']}")
         if business.get('hotline'):
@@ -568,10 +576,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             lines.append(f"🎬 [YouTube]({business['youtube']})")
 
         message = "\n".join(lines)
-        keyboard = [[
+        keyboard = []
+        if truncated:
+            keyboard.append([InlineKeyboardButton("📖 Read full description", callback_data=f"desc_{biz_id}")])
+        keyboard.append([
             InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
             InlineKeyboardButton(main_menu_text, callback_data="main_menu")
-        ]]
+        ])
 
         logo = business.get('logo')
         if logo:
@@ -584,6 +595,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='Markdown'
         )
+        return
+
+    if data.startswith("desc_"):
+        biz_id = int(data.split("_")[1])
+        business = bot_handler.get_business(biz_id)
+        if business and business.get('description'):
+            await query.message.reply_text(
+                f"📖 **{business['title']}**\n\n{business['description']}",
+                parse_mode='Markdown'
+            )
         return
 
     if data.startswith("rate_"):
@@ -615,7 +636,7 @@ def main() -> None:
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("categories", categories_command))
 
-    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(tag_|cat_|content_|back_main|back_|main_menu|rate_|biz_)'))
+    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(tag_|cat_|content_|back_main|back_|main_menu|rate_|biz_|desc_)'))
 
     application.run_polling()
 
