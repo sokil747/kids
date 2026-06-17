@@ -632,7 +632,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             logger.error(f"Error in biz handler: {e}")
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text="❌ Failed to load business card."
+                text=f"❌ Error: {e}"
             )
         return
 
