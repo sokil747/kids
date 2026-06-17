@@ -616,10 +616,17 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         biz_id = int(data.split("_")[1])
         business = bot_handler.get_business(biz_id)
         if business and business.get('description'):
-            await query.message.reply_text(
-                f"📖 **{business['title']}**\n\n{business['description']}",
-                parse_mode='Markdown'
-            )
+            try:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=f"📖 **{business['title']}**\n\n{business['description']}",
+                    parse_mode='Markdown'
+                )
+            except Exception:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=f"📖 {business['title']}\n\n{business['description']}"
+                )
         return
 
     if data.startswith("rate_"):
