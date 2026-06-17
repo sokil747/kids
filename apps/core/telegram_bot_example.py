@@ -559,30 +559,31 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     desc = desc[:200]
                 lines.append(f"\n_{desc}_")
                 if truncated:
-                    lines.append(f"\n... 📖")
+                    pass
 
             if business.get('address'):
                 lines.append(f"\n📍 {business['address']}")
+            if business.get('online_store'):
+                lines.append(f"🛒 [Online Store]({business['online_store']})")
+            if business.get('facebook'):
+                lines.append(f"📘 [Facebook]({business['facebook']})")
+            if business.get('instagram'):
+                lines.append(f"📸 [Instagram]({business['instagram']})")
+            if business.get('tiktok'):
+                lines.append(f"🎵 [TikTok]({business['tiktok']})")
+            if business.get('youtube'):
+                lines.append(f"🎬 [YouTube]({business['youtube']})")
+            hotline = business.get('hotline', '').strip()
+            if hotline:
+                label = business.get('hotline_label', '').strip() or "Гаряча лінія"
+                lines.append(f"📞 {label}: {hotline}")
 
             message = "\n".join(lines)
             keyboard = []
             if truncated:
-                keyboard.append([InlineKeyboardButton("📖 Read full description", callback_data=f"desc_{biz_id}")])
-            if business.get('online_store'):
-                keyboard.append([InlineKeyboardButton("🛒 Online Store", url=business['online_store'])])
-            if business.get('facebook'):
-                keyboard.append([InlineKeyboardButton("📘 Facebook", url=business['facebook'])])
-            if business.get('instagram'):
-                keyboard.append([InlineKeyboardButton("📸 Instagram", url=business['instagram'])])
-            if business.get('tiktok'):
-                keyboard.append([InlineKeyboardButton("🎵 TikTok", url=business['tiktok'])])
-            if business.get('youtube'):
-                keyboard.append([InlineKeyboardButton("🎬 YouTube", url=business['youtube'])])
-            hotline = business.get('hotline', '').strip()
+                keyboard.append([InlineKeyboardButton("📖 повний опис", callback_data=f"desc_{biz_id}")])
             if hotline:
-                label = business.get('hotline_label', '').strip() or "Гаряча лінія"
-                message += f"\n📞 {label}: `{hotline}`"
-                keyboard.append([InlineKeyboardButton(f"📁 Зберегти контакт", callback_data=f"contact_{biz_id}")])
+                keyboard.append([InlineKeyboardButton("📁 зберегти контакт", callback_data=f"contact_{biz_id}")])
             keyboard.append([
                 InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
                 InlineKeyboardButton(main_menu_text, callback_data="main_menu")
