@@ -593,23 +593,40 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             try:
                 await context.bot.send_photo(
                     chat_id=chat_id,
-                    photo=logo
+                    photo=logo,
+                    caption=message,
+                    parse_mode='Markdown',
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
-            except Exception as e:
-                logger.error(f"Error sending business logo: {e}")
-        try:
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text=message,
-                reply_markup=InlineKeyboardMarkup(keyboard),
-                parse_mode='Markdown'
-            )
-        except Exception:
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text=message,
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
+            except Exception:
+                try:
+                    await context.bot.send_photo(
+                        chat_id=chat_id,
+                        photo=logo,
+                        caption=message,
+                        reply_markup=InlineKeyboardMarkup(keyboard)
+                    )
+                except Exception as e:
+                    logger.error(f"Error sending business with logo: {e}")
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=message,
+                        reply_markup=InlineKeyboardMarkup(keyboard)
+                    )
+        else:
+            try:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=message,
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
+                )
+            except Exception:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=message,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
         return
 
     if data.startswith("desc_"):
