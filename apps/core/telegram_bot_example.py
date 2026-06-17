@@ -562,7 +562,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
             if business.get('address'):
                 address = business['address']
-                lines.append(f"\n📍 [{address}](https://maps.google.com/?q={quote(address)})")
+                lines.append(f"\n📍 Адреса: [{address}](https://maps.google.com/?q={quote(address)})")
             if business.get('online_store'):
                 lines.append(f"🛒 [Наші магазини]({business['online_store']})")
             if business.get('facebook'):
