@@ -557,14 +557,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 truncated = len(desc) > 200
                 if truncated:
                     desc = desc[:200]
-                lines.append(f"\n_{desc}_")
-                if truncated:
-                    pass
+                lines.append(f"\n_{desc}{'...' if truncated else ''}_")
 
             if business.get('address'):
-                lines.append(f"\n📍 {business['address']}")
+                address = business['address']
+                lines.append(f"\n📍 [{address}](https://maps.google.com/?q={address})")
             if business.get('online_store'):
-                lines.append(f"🛒 [Online Store]({business['online_store']})")
+                lines.append(f"🛒 [Наші магазини]({business['online_store']})")
             if business.get('facebook'):
                 lines.append(f"📘 [Facebook]({business['facebook']})")
             if business.get('instagram'):
