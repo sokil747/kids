@@ -588,23 +588,26 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         ])
 
         logo = business.get('logo')
+        chat_id = update.effective_chat.id
         if logo:
             try:
                 await context.bot.send_photo(
-                    chat_id=query.message.chat_id,
+                    chat_id=chat_id,
                     photo=logo
                 )
             except Exception as e:
                 logger.error(f"Error sending business logo: {e}")
         try:
-            await query.message.reply_text(
-                message,
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=message,
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 parse_mode='Markdown'
             )
         except Exception:
-            await query.message.reply_text(
-                message,
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=message,
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
         return
