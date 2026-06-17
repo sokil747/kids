@@ -1,6 +1,7 @@
 import os
 import requests
 import logging
+from urllib.parse import quote
 from typing import Optional
 from decouple import config
 from asgiref.sync import sync_to_async
@@ -561,7 +562,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
             if business.get('address'):
                 address = business['address']
-                lines.append(f"\n📍 [{address}](https://maps.google.com/?q={address})")
+                lines.append(f"\n📍 [{address}](https://maps.google.com/?q={quote(address)})")
             if business.get('online_store'):
                 lines.append(f"🛒 [Наші магазини]({business['online_store']})")
             if business.get('facebook'):
