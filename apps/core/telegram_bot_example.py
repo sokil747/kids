@@ -592,11 +592,17 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 chat_id=query.message.chat_id,
                 photo=logo
             )
-        await query.message.reply_text(
-            message,
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode='Markdown'
-        )
+        try:
+            await query.message.reply_text(
+                message,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+        except Exception:
+            await query.message.reply_text(
+                message,
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
         return
 
     if data.startswith("desc_"):
