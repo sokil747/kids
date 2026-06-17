@@ -581,10 +581,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             hotline = business.get('hotline', '').strip()
             if hotline:
                 label = business.get('hotline_label', '').strip() or "Гаряча лінія"
-                digits = ''.join(c for c in hotline if c.isdigit())
-                if digits.startswith('0'):
-                    digits = '380' + digits[1:]
-                keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:+{digits}")])
+                message += f"\n📞 {label}: `{hotline}`"
+                keyboard.append([InlineKeyboardButton(f"📁 Зберегти контакт", callback_data=f"contact_{biz_id}")])
             keyboard.append([
                 InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
                 InlineKeyboardButton(main_menu_text, callback_data="main_menu")
@@ -655,6 +653,20 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 )
         return
 
+    if data.startswith("contact_"):
+        biz_id = int(data.split("_")[1])
+        business = bot_handler.get_business(biz_id)
+        if business and business.get('hotline'):
+            phone = ''.join(c for c in business['hotline'] if c.isdigit())
+            if phone.startswith('0'):
+                phone = '380' + phone[1:]
+            await context.bot.send_contact(
+                chat_id=update.effective_chat.id,
+                phone_number=f"+{phone}",
+                first_name=business['title']
+            )
+        return
+
     if data.startswith("rate_"):
         parts = data.split("_")
         content_id = int(parts[1])
@@ -684,7 +696,7 @@ def main() -> None:
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("categories", categories_command))
 
-    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(tag_|cat_|content_|back_main|back_|main_menu|rate_|biz_|desc_)'))
+    application.add_handler(CallbackQueryHandler(handle_callback, pattern=r'^(tag_|cat_|content_|back_main|back_|main_menu|rate_|biz_|desc_|contact_)'))
 
     application.run_polling()
 
