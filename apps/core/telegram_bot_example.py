@@ -581,11 +581,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             hotline = business.get('hotline', '').strip()
             if hotline:
                 label = business.get('hotline_label', '').strip() or "Гаряча лінія"
-                digits = ''.join(c for c in hotline if c.isdigit() or c == '+')
-                if digits.startswith('+') and len(digits) > 1 and digits[1:].isdigit():
-                    keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:{digits}")])
-                else:
-                    message += f"\n📞 {label}: {hotline}"
+                digits = ''.join(c for c in hotline if c.isdigit())
+                if digits.startswith('0'):
+                    digits = '380' + digits[1:]
+                keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:+{digits}")])
             keyboard.append([
                 InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
                 InlineKeyboardButton(main_menu_text, callback_data="main_menu")
