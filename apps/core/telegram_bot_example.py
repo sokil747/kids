@@ -541,92 +541,99 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return
 
     if data.startswith("biz_"):
-        parts = data.split("_")
-        biz_id = int(parts[1])
-        cat_id = int(parts[2]) if len(parts) > 2 else None
-        business = bot_handler.get_business(biz_id)
-        if not business:
-            await query.edit_message_text("Business not found.")
-            return
+        try:
+            parts = data.split("_")
+            biz_id = int(parts[1])
+            cat_id = int(parts[2]) if len(parts) > 2 else None
+            business = bot_handler.get_business(biz_id)
+            if not business:
+                await query.edit_message_text("Business not found.")
+                return
 
-        lines = [f"🏪 **{business['title']}**"]
-        truncated = False
-        if business.get('description'):
-            desc = business['description']
-            truncated = len(desc) > 200
+            lines = [f"🏪 **{business['title']}**"]
+            truncated = False
+            if business.get('description'):
+                desc = business['description']
+                truncated = len(desc) > 200
+                if truncated:
+                    desc = desc[:200]
+                lines.append(f"\n_{desc}_")
+                if truncated:
+                    lines.append(f"\n... 📖")
+
+            if business.get('address'):
+                lines.append(f"\n📍 {business['address']}")
+
+            message = "\n".join(lines)
+            keyboard = []
             if truncated:
-                desc = desc[:200]
-            lines.append(f"\n_{desc}_")
-            if truncated:
-                lines.append(f"\n... 📖")
+                keyboard.append([InlineKeyboardButton("📖 Read full description", callback_data=f"desc_{biz_id}")])
+            if business.get('online_store'):
+                keyboard.append([InlineKeyboardButton("🛒 Online Store", url=business['online_store'])])
+            if business.get('facebook'):
+                keyboard.append([InlineKeyboardButton("📘 Facebook", url=business['facebook'])])
+            if business.get('instagram'):
+                keyboard.append([InlineKeyboardButton("📸 Instagram", url=business['instagram'])])
+            if business.get('tiktok'):
+                keyboard.append([InlineKeyboardButton("🎵 TikTok", url=business['tiktok'])])
+            if business.get('youtube'):
+                keyboard.append([InlineKeyboardButton("🎬 YouTube", url=business['youtube'])])
+            hotline = business.get('hotline', '').strip()
+            if hotline:
+                label = business.get('hotline_label', '').strip() or "Гаряча лінія"
+                clean_number = hotline.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+                keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:{clean_number}")])
+            keyboard.append([
+                InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
+                InlineKeyboardButton(main_menu_text, callback_data="main_menu")
+            ])
 
-        if business.get('address'):
-            lines.append(f"\n📍 {business['address']}")
-
-        message = "\n".join(lines)
-        keyboard = []
-        if truncated:
-            keyboard.append([InlineKeyboardButton("📖 Read full description", callback_data=f"desc_{biz_id}")])
-        if business.get('online_store'):
-            keyboard.append([InlineKeyboardButton("🛒 Online Store", url=business['online_store'])])
-        if business.get('facebook'):
-            keyboard.append([InlineKeyboardButton("📘 Facebook", url=business['facebook'])])
-        if business.get('instagram'):
-            keyboard.append([InlineKeyboardButton("📸 Instagram", url=business['instagram'])])
-        if business.get('tiktok'):
-            keyboard.append([InlineKeyboardButton("🎵 TikTok", url=business['tiktok'])])
-        if business.get('youtube'):
-            keyboard.append([InlineKeyboardButton("🎬 YouTube", url=business['youtube'])])
-        hotline = business.get('hotline', '').strip()
-        if hotline:
-            label = business.get('hotline_label', '').strip() or "Гаряча лінія"
-            clean_number = hotline.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
-            keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:{clean_number}")])
-        keyboard.append([
-            InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
-            InlineKeyboardButton(main_menu_text, callback_data="main_menu")
-        ])
-
-        logo = business.get('logo')
-        chat_id = update.effective_chat.id
-        if logo:
-            try:
-                await context.bot.send_photo(
-                    chat_id=chat_id,
-                    photo=logo,
-                    caption=message,
-                    parse_mode='Markdown',
-                    reply_markup=InlineKeyboardMarkup(keyboard)
-                )
-            except Exception:
+            logo = business.get('logo')
+            chat_id = update.effective_chat.id
+            if logo:
                 try:
                     await context.bot.send_photo(
                         chat_id=chat_id,
                         photo=logo,
                         caption=message,
+                        parse_mode='Markdown',
                         reply_markup=InlineKeyboardMarkup(keyboard)
                     )
-                except Exception as e:
-                    logger.error(f"Error sending business with logo: {e}")
+                except Exception:
+                    try:
+                        await context.bot.send_photo(
+                            chat_id=chat_id,
+                            photo=logo,
+                            caption=message,
+                            reply_markup=InlineKeyboardMarkup(keyboard)
+                        )
+                    except Exception as e:
+                        logger.error(f"Error sending business with logo: {e}")
+                        await context.bot.send_message(
+                            chat_id=chat_id,
+                            text=message,
+                            reply_markup=InlineKeyboardMarkup(keyboard)
+                        )
+            else:
+                try:
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=message,
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode='Markdown'
+                    )
+                except Exception:
                     await context.bot.send_message(
                         chat_id=chat_id,
                         text=message,
                         reply_markup=InlineKeyboardMarkup(keyboard)
                     )
-        else:
-            try:
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text=message,
-                    reply_markup=InlineKeyboardMarkup(keyboard),
-                    parse_mode='Markdown'
-                )
-            except Exception:
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text=message,
-                    reply_markup=InlineKeyboardMarkup(keyboard)
-                )
+        except Exception as e:
+            logger.error(f"Error in biz handler: {e}")
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="❌ Failed to load business card."
+            )
         return
 
     if data.startswith("desc_"):
