@@ -580,7 +580,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         hotline = business.get('hotline', '').strip()
         if hotline:
             label = business.get('hotline_label', '').strip() or "Гаряча лінія"
-            keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:{hotline}")])
+            clean_number = hotline.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+            keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:{clean_number}")])
         keyboard.append([
             InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
             InlineKeyboardButton(main_menu_text, callback_data="main_menu")
@@ -588,10 +589,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         logo = business.get('logo')
         if logo:
-            await context.bot.send_photo(
-                chat_id=query.message.chat_id,
-                photo=logo
-            )
+            try:
+                await context.bot.send_photo(
+                    chat_id=query.message.chat_id,
+                    photo=logo
+                )
+            except Exception as e:
+                logger.error(f"Error sending business logo: {e}")
         try:
             await query.message.reply_text(
                 message,
