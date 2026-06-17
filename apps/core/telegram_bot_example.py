@@ -581,10 +581,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             hotline = business.get('hotline', '').strip()
             if hotline:
                 label = business.get('hotline_label', '').strip() or "Гаряча лінія"
-                clean_number = hotline.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
-                if not clean_number.startswith('+'):
-                    clean_number = '+' + clean_number
-                keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:{clean_number}")])
+                digits = ''.join(c for c in hotline if c.isdigit() or c == '+')
+                if digits.startswith('+') and len(digits) > 1 and digits[1:].isdigit():
+                    keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:{digits}")])
+                else:
+                    message += f"\n📞 {label}: {hotline}"
             keyboard.append([
                 InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
                 InlineKeyboardButton(main_menu_text, callback_data="main_menu")
@@ -634,7 +635,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             logger.error(f"Error in biz handler: {e}")
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=f"❌ Error: {e}"
+                text="❌ Failed to load business card."
             )
         return
 
