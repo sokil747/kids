@@ -582,6 +582,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if hotline:
                 label = business.get('hotline_label', '').strip() or "Гаряча лінія"
                 clean_number = hotline.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+                if not clean_number.startswith('+'):
+                    clean_number = '+' + clean_number
                 keyboard.append([InlineKeyboardButton(f"📞 {label}", url=f"tel:{clean_number}")])
             keyboard.append([
                 InlineKeyboardButton(back_text, callback_data=f"cat_{cat_id}"),
