@@ -94,8 +94,8 @@ class TagAdmin(admin.ModelAdmin):
                     messages.error(request, "Сесія порожня. Будь ласка, виконайте попередній перегляд ще раз")
                     return redirect('admin:content_business_gsheet_import')
 
-                import requests as req_lib
                 import re as re_lib
+                import urllib.request as url_req
                 from django.core.files.base import ContentFile
 
                 skip_ids = set(request.POST.getlist('skip'))
@@ -126,9 +126,8 @@ class TagAdmin(admin.ModelAdmin):
                             file_id = m.group(1)
                             dl_url = f"https://drive.google.com/uc?export=download&id={file_id}"
                             try:
-                                img_resp = req_lib.get(dl_url, allow_redirects=True, timeout=15)
-                                if img_resp.status_code == 200:
-                                    biz.logo.save(f"{file_id}.jpg", ContentFile(img_resp.content), save=True)
+                                img_resp = url_req.urlopen(dl_url, timeout=15)
+                                biz.logo.save(f"{file_id}.jpg", ContentFile(img_resp.read()), save=True)
                             except Exception:
                                 pass
 

@@ -1,7 +1,7 @@
 import csv
 import io
 import re
-import requests
+import urllib.request
 
 
 DEFAULT_SHEET_URL = (
@@ -38,9 +38,8 @@ def extract_spreadsheet_id(url):
 
 def fetch_sheet_csv(spreadsheet_id):
     url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv"
-    resp = requests.get(url, allow_redirects=True, timeout=30)
-    resp.raise_for_status()
-    return resp.text
+    resp = urllib.request.urlopen(url, timeout=30)
+    return resp.read().decode("utf-8")
 
 
 def parse_rows(csv_text):
