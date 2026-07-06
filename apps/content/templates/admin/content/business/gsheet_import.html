@@ -1,0 +1,129 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    .import-table { width:100%; border-collapse:collapse; margin:1em 0; }
+    .import-table th, .import-table td { padding:8px 12px; border:1px solid #ddd; text-align:left; }
+    .import-table th { background:#f5f5f5; font-weight:600; }
+    .import-table tr.duplicate { background:#fff3cd; }
+    .import-table tr.new-row { background:#d4edda; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:3px; font-size:11px; font-weight:600; }
+    .badge-duplicate { background:#ffc107; color:#333; }
+    .badge-new { background:#28a745; color:#fff; }
+    .badge-photo { background:#17a2b8; color:#fff; }
+    .skip-col { text-align:center; }
+    .summary { padding:1em; background:#f8f9fa; border-radius:4px; margin:1em 0; }
+    .summary strong { font-size:1.1em; }
+    .form-row { margin:1em 0; }
+    .form-row label { display:block; margin-bottom:4px; font-weight:600; }
+    .form-row input[type=url] { width:100%; max-width:600px; padding:6px 10px; border:1px solid #ccc; border-radius:4px; }
+    .submit-row { margin:1em 0; }
+    .submit-row input { padding:8px 20px; }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:content_business_changelist' %}">{{ opts.verbose_name_plural }}</a>
+    &rsaquo; {{ title }}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <h1>{{ title }}</h1>
+
+  {% if rows %}
+    <div class="summary">
+      <strong>Знайдено записів: {{ rows|length }}</strong>
+      &nbsp;—&nbsp;
+      <span style="color:#28a745;">✓ Нових: {{ new_count }}</span>
+      &nbsp;
+      <span style="color:#ffc107;">⚠ Дублікатів: {{ dup_count }}</span>
+      <span style="float:right;font-size:12px;color:#666;">
+        Позначте дублікати ☑, які потрібно пропустити (не оновлювати)
+      </span>
+    </div>
+
+    <form method="post" action="">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="confirm">
+      <input type="hidden" name="sheet_url" value="{{ sheet_url }}">
+
+      <table class="import-table">
+        <thead>
+          <tr>
+            <th>Пропустити</th>
+            <th>Статус</th>
+            <th>Назва мережі</th>
+            <th>Опис</th>
+            <th>Соціальні мережі</th>
+            <th>Телефон</th>
+            <th>Фото</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr class="{% if r._is_duplicate %}duplicate{% else %}new-row{% endif %}">
+              <td class="skip-col">
+                {% if r._is_duplicate %}
+                  <input type="checkbox" name="skip" value="{{ r._existing_id }}">
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>
+                {% if r._is_duplicate %}
+                  <span class="badge badge-duplicate">Існує</span>
+                {% else %}
+                  <span class="badge badge-new">Новий</span>
+                {% endif %}
+              </td>
+              <td><strong>{{ r.title }}</strong></td>
+              <td>{{ r.description|truncatewords:20 }}</td>
+              <td>
+                {% if r.online_store %}<div>🛒 {{ r.online_store|truncatechars:30 }}</div>{% endif %}
+                {% if r.facebook %}<div>📘 {{ r.facebook|truncatechars:30 }}</div>{% endif %}
+                {% if r.instagram %}<div>📸 {{ r.instagram|truncatechars:30 }}</div>{% endif %}
+                {% if r.tiktok %}<div>🎵 {{ r.tiktok|truncatechars:30 }}</div>{% endif %}
+                {% if r.youtube %}<div>🎬 {{ r.youtube|truncatechars:30 }}</div>{% endif %}
+              </td>
+              <td>{{ r.hotline|default:"—" }}</td>
+              <td>
+                {% if r._photo_url %}
+                  <span class="badge badge-photo">Є</span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="submit-row">
+        <input type="submit" value="Підтвердити імпорт" class="default">
+        <a href="{% url 'admin:content_business_gsheet_import' %}" class="button">Скасувати</a>
+      </div>
+    </form>
+
+  {% else %}
+    <form method="post" action="">
+      {% csrf_token %}
+      <div class="form-row">
+        <label for="id_sheet_url">Посилання на Google Таблицю:</label>
+        <input type="url" id="id_sheet_url" name="sheet_url" value="{{ sheet_url }}" size="100">
+        <div class="help" style="margin-top:4px;color:#666;">
+          Вставте посилання на Google Sheets файл (наприклад, <code>https://docs.google.com/spreadsheets/d/.../edit...</code>)
+        </div>
+      </div>
+      <div class="submit-row">
+        <input type="hidden" name="action" value="preview">
+        <input type="submit" value="Попередній перегляд" class="default">
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}
