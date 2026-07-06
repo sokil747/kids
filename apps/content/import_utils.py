@@ -10,6 +10,20 @@ DEFAULT_SHEET_URL = (
     "edit?gid=1170806001#gid=1170806001"
 )
 
+BUSINESS_FIELDS = [
+    ("title", "Назва мережі", True),
+    ("description", "Опис", False),
+    ("online_store", "Наші магазини", False),
+    ("facebook", "Facebook", False),
+    ("instagram", "Instagram", False),
+    ("tiktok", "TikTok", False),
+    ("youtube", "YouTube", False),
+    ("hotline", "Телефон", False),
+    ("photo_url", "Фото (logo)", False),
+]
+
+URL_FIELDS = {"online_store", "facebook", "instagram", "tiktok", "youtube"}
+
 COLUMN_MAP = {
     "Назва мережі": "title",
     "Текст": "description",
@@ -20,8 +34,6 @@ COLUMN_MAP = {
     "YouTube": "youtube",
     "Служба підтримки": "hotline",
 }
-
-URL_FIELDS = {"online_store", "facebook", "instagram", "tiktok", "youtube"}
 
 
 def extract_spreadsheet_id(url):
@@ -50,21 +62,29 @@ def fetch_sheet_csv(spreadsheet_id, gid=None):
     return resp.content.decode("utf-8-sig")
 
 
-def parse_rows(csv_text):
+def get_fieldnames(csv_text):
+    reader = csv.DictReader(io.StringIO(csv_text))
+    return reader.fieldnames
+
+
+def parse_rows(csv_text, column_map=None):
+    if column_map is None:
+        column_map = COLUMN_MAP
     reader = csv.DictReader(io.StringIO(csv_text))
     rows = []
     for row in reader:
         data = {}
-        for sheet_col, model_field in COLUMN_MAP.items():
+        for sheet_col, model_field in column_map.items():
             value = row.get(sheet_col, "").strip()
-            if model_field in URL_FIELDS:
+            if not value:
+                continue
+            if model_field == "photo_url":
+                data[model_field] = value
+            elif model_field in URL_FIELDS:
                 if value.startswith("http://") or value.startswith("https://"):
                     data[model_field] = value
             else:
                 data[model_field] = value
-        photo = row.get("Фото", "").strip()
-        if photo:
-            data["photo_url"] = photo
         title = data.get("title", "").strip()
         if title:
             rows.append(data)
@@ -73,5 +93,6 @@ def parse_rows(csv_text):
 
 def find_duplicates(rows):
     from .models import Business
+
     existing = Business.objects.filter(title__in=[r["title"] for r in rows])
     return {b.title.lower(): b for b in existing}

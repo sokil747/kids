@@ -8,7 +8,7 @@ from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import Tag, Category, Content, ContentRating, Business
-from .import_utils import extract_spreadsheet_id, extract_gid, fetch_sheet_csv, parse_rows, find_duplicates, DEFAULT_SHEET_URL
+from .import_utils import COLUMN_MAP, extract_spreadsheet_id, extract_gid, fetch_sheet_csv, get_fieldnames, parse_rows, find_duplicates, BUSINESS_FIELDS, DEFAULT_SHEET_URL
 
 
 @admin.register(Tag)
@@ -356,6 +356,7 @@ class BusinessAdmin(admin.ModelAdmin):
 
                 try:
                     csv_text = fetch_sheet_csv(sheet_id, gid)
+                    fieldnames = get_fieldnames(csv_text)
                     rows = parse_rows(csv_text)
                 except Exception as e:
                     messages.error(request, f"Помилка отримання даних з таблиці: {e}")
@@ -374,6 +375,7 @@ class BusinessAdmin(admin.ModelAdmin):
                     if r['is_duplicate']:
                         dup_count += 1
 
+                request.session['gsheet_import_csv'] = csv_text
                 request.session['gsheet_import_rows'] = rows
                 request.session['gsheet_import_url'] = sheet_url
 
@@ -383,20 +385,42 @@ class BusinessAdmin(admin.ModelAdmin):
                     'sheet_url': sheet_url,
                     'dup_count': dup_count,
                     'new_count': len(rows) - dup_count,
+                    'fieldnames': fieldnames,
+                    'mapping_fields': [
+                        (f, l, r, next((s for s, m in COLUMN_MAP.items() if m == f), ''))
+                        for f, l, r in BUSINESS_FIELDS
+                    ],
                     'title': 'Попередній перегляд імпорту',
                     'opts': self.model._meta,
                 }
                 return render(request, 'admin/content/business/gsheet_import.html', ctx)
 
             if action == 'confirm':
-                rows = request.session.get('gsheet_import_rows', [])
-                if not rows:
+                csv_text = request.session.get('gsheet_import_csv', '')
+                if not csv_text:
                     messages.error(request, "Сесія порожня. Будь ласка, виконайте попередній перегляд ще раз")
                     return redirect('admin:content_business_gsheet_import')
 
                 import requests as req_lib
                 import re as re_lib
                 from django.core.files.base import ContentFile
+
+                column_map = {}
+                for biz_field, label, required in BUSINESS_FIELDS:
+                    csv_col = request.POST.get(f'map_{biz_field}')
+                    if csv_col and csv_col != '__skip__':
+                        column_map[csv_col] = biz_field
+
+                rows = parse_rows(csv_text, column_map)
+                if not rows:
+                    messages.error(request, "Після застосування маппінгу не знайдено жодного рядка з назвою мережі")
+                    return redirect('admin:content_business_gsheet_import')
+
+                duplicates = find_duplicates(rows)
+                for r in rows:
+                    key = r['title'].lower()
+                    r['is_duplicate'] = key in duplicates
+                    r['existing_id'] = duplicates[key].id if key in duplicates else None
 
                 skip_ids = set(request.POST.getlist('skip'))
                 updated = 0
@@ -435,6 +459,7 @@ class BusinessAdmin(admin.ModelAdmin):
 
                 request.session.pop('gsheet_import_rows', None)
                 request.session.pop('gsheet_import_url', None)
+                request.session.pop('gsheet_import_csv', None)
                 messages.success(request, f"Імпорт завершено. Створено: {created}, оновлено: {updated}, пропущено: {skipped}")
                 return redirect('admin:content_business_changelist')
 

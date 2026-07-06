@@ -7,10 +7,9 @@
     .table-wrap { overflow-x:auto; max-width:100%; }
     .import-table { border-collapse:collapse; margin:1em 0; min-width:900px; }
     .import-table th, .import-table td { padding:8px 12px; border:1px solid #ddd; text-align:left; }
-    .import-table th { background:#f5f5f5; font-weight:600; white-space:nowrap; }
+    .import-table th { background:#f5f5f5; font-weight:600; white-space:nowrap; color:#000; }
     .import-table tr.duplicate { background:#fff3cd; }
     .import-table tr.new-row { background:#d4edda; color:#000; }
-    .import-table tr.new-row .badge-new { color:#fff; }
     .badge { display:inline-block; padding:2px 8px; border-radius:3px; font-size:11px; font-weight:600; }
     .badge-duplicate { background:#ffc107; color:#333; }
     .badge-new { background:#28a745; color:#fff; }
@@ -23,8 +22,11 @@
     .form-row input[type=url] { width:100%; max-width:600px; padding:6px 10px; border:1px solid #ccc; border-radius:4px; }
     .submit-row { margin:1em 0; }
     .submit-row input { padding:8px 20px; }
-    .mapping-info { font-size:12px; color:#555; margin:0.5em 0; line-height:1.6; }
-    .mapping-info code { background:#f0f0f0; padding:1px 5px; border-radius:3px; font-size:11px; }
+    .mapping-wrap { margin:1em 0; padding:1em; background:#f8f9fa; border-radius:4px; font-size:14px; }
+    .mapping-wrap table { border-collapse:collapse; }
+    .mapping-wrap td, .mapping-wrap th { padding:4px 12px; }
+    .mapping-wrap select { font-size:13px; padding:2px 6px; }
+    .mapping-wrap .hint { font-size:12px; color:#888; margin-top:6px; }
   </style>
 {% endblock %}
 
@@ -52,18 +54,29 @@
       </span>
     </div>
 
-    <div class="mapping-info">
-      <strong>Маппінг колонок таблиці → поля Business:</strong><br>
-      <code>Фото</code> → logo (завантажується),
-      <code>Назва мережі</code> → назва,
-      <code>Текст</code> → опис,
-      <code>Наші магазини</code> → online_store,
-      <code>Facebook/Instagram/TikTok/YouTube</code> → відповідні поля,
-      <code>Служба підтримки</code> → hotline
-      <span style="color:#999;">(значення без URL пропускаються)</span>
+    <div class="mapping-wrap">
+      <strong>Маппінг колонок:</strong> оберіть для кожного поля Business який стовпець таблиці відповідає
+      <table>
+        {% for field, label, required, default_col in mapping_fields %}
+          <tr>
+            <td><strong>{{ label }}</strong>{% if required %} <span style="color:red;">*</span>{% endif %}</td>
+            <td>→</td>
+            <td>
+              <select name="map_{{ field }}">
+                <option value="__skip__">— пропустити</option>
+                {% for fn in fieldnames %}
+                  <option value="{{ fn }}"{% if fn == default_col %} selected{% endif %}>{{ fn }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td style="font-size:12px;color:#888;">{{ field }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+      <div class="hint">💡 Змініть маппінг за потреби. Для полів соцмереж значення без http:// або https:// будуть пропущені.</div>
     </div>
 
-    <form method="post" action="">
+    <form method="post" action="" id="import-form">
       {% csrf_token %}
       <input type="hidden" name="action" value="confirm">
       <input type="hidden" name="sheet_url" value="{{ sheet_url }}">
