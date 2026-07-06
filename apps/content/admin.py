@@ -37,6 +37,78 @@ class TagAdmin(admin.ModelAdmin):
         )
     is_active_badge.short_description = 'Status'
 
+
+@admin.register(Category)
+class ContentRatingAdmin(admin.ModelAdmin):
+    """Admin for content ratings."""
+    
+    list_display = ('content', 'rating_display', 'user_id', 'created_at')
+    list_filter = ('rating', 'created_at', 'content__category')
+    search_fields = ('content__title', 'user_id', 'comment')
+    readonly_fields = ('content', 'user_id', 'rating', 'comment', 'created_at')
+    
+    def has_add_permission(self, request):
+        """Ratings are created by bot users, not admins."""
+        return False
+    
+    def rating_display(self, obj):
+        """Display rating as stars."""
+        stars = '★' * obj.rating + '☆' * (5 - obj.rating)
+        return format_html(
+            '<span style="color: gold; font-size: 16px;">{}</span>',
+            stars
+        )
+    rating_display.short_description = 'Rating'
+
+
+@admin.register(Business)
+class BusinessAdmin(admin.ModelAdmin):
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'logo', 'description', 'emoji')
+        }),
+        ('Contact & Location', {
+            'fields': ('address', 'geo_coordinates', 'hotline', 'hotline_label'),
+        }),
+        ('Social Media & Links', {
+            'fields': ('online_store', 'facebook', 'instagram', 'tiktok', 'youtube'),
+            'classes': ('collapse',)
+        }),
+        ('Organization', {
+            'fields': ('tags', 'categories', 'order')
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+    list_display = ('title', 'business_tags', 'business_categories', 'is_active_badge', 'updated_at')
+    list_filter = ('is_active', 'tags', 'categories')
+    search_fields = ('title', 'description', 'address')
+    readonly_fields = ('created_at', 'updated_at')
+    filter_horizontal = ('tags', 'categories')
+    change_list_template = 'admin/content/business/change_list.html'
+
+    def business_tags(self, obj):
+        return ", ".join(str(t) for t in obj.tags.all()) or "—"
+    business_tags.short_description = 'Tags'
+
+    def business_categories(self, obj):
+        return ", ".join(str(c) for c in obj.categories.all()[:3]) or "—"
+    business_categories.short_description = 'Categories'
+
+    def is_active_badge(self, obj):
+        color = '#28a745' if obj.is_active else '#dc3545'
+        status = 'Active' if obj.is_active else 'Inactive'
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>',
+            color, status
+        )
+    is_active_badge.short_description = 'Status'
+
     def get_urls(self):
         urls = super().get_urls()
         return [
@@ -145,75 +217,3 @@ class TagAdmin(admin.ModelAdmin):
             'opts': self.model._meta,
         }
         return render(request, 'admin/content/business/gsheet_import.html', ctx)
-
-
-@admin.register(ContentRating)
-class ContentRatingAdmin(admin.ModelAdmin):
-    """Admin for content ratings."""
-    
-    list_display = ('content', 'rating_display', 'user_id', 'created_at')
-    list_filter = ('rating', 'created_at', 'content__category')
-    search_fields = ('content__title', 'user_id', 'comment')
-    readonly_fields = ('content', 'user_id', 'rating', 'comment', 'created_at')
-    
-    def has_add_permission(self, request):
-        """Ratings are created by bot users, not admins."""
-        return False
-    
-    def rating_display(self, obj):
-        """Display rating as stars."""
-        stars = '★' * obj.rating + '☆' * (5 - obj.rating)
-        return format_html(
-            '<span style="color: gold; font-size: 16px;">{}</span>',
-            stars
-        )
-    rating_display.short_description = 'Rating'
-
-
-@admin.register(Business)
-class BusinessAdmin(admin.ModelAdmin):
-    fieldsets = (
-        ('Basic Information', {
-            'fields': ('title', 'logo', 'description', 'emoji')
-        }),
-        ('Contact & Location', {
-            'fields': ('address', 'geo_coordinates', 'hotline', 'hotline_label'),
-        }),
-        ('Social Media & Links', {
-            'fields': ('online_store', 'facebook', 'instagram', 'tiktok', 'youtube'),
-            'classes': ('collapse',)
-        }),
-        ('Organization', {
-            'fields': ('tags', 'categories', 'order')
-        }),
-        ('Status', {
-            'fields': ('is_active',)
-        }),
-        ('Metadata', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',),
-        }),
-    )
-    list_display = ('title', 'business_tags', 'business_categories', 'is_active_badge', 'updated_at')
-    list_filter = ('is_active', 'tags', 'categories')
-    search_fields = ('title', 'description', 'address')
-    readonly_fields = ('created_at', 'updated_at')
-    filter_horizontal = ('tags', 'categories')
-    change_list_template = 'admin/content/business/change_list.html'
-
-    def business_tags(self, obj):
-        return ", ".join(str(t) for t in obj.tags.all()) or "—"
-    business_tags.short_description = 'Tags'
-
-    def business_categories(self, obj):
-        return ", ".join(str(c) for c in obj.categories.all()[:3]) or "—"
-    business_categories.short_description = 'Categories'
-
-    def is_active_badge(self, obj):
-        color = '#28a745' if obj.is_active else '#dc3545'
-        status = 'Active' if obj.is_active else 'Inactive'
-        return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>',
-            color, status
-        )
-    is_active_badge.short_description = 'Status'
