@@ -47,7 +47,7 @@ def fetch_sheet_csv(spreadsheet_id, gid=None):
         url += f"&gid={gid}"
     resp = requests.get(url, allow_redirects=True, timeout=30)
     resp.raise_for_status()
-    return resp.text
+    return resp.content.decode("utf-8-sig")
 
 
 def parse_rows(csv_text):
