@@ -369,9 +369,9 @@ class BusinessAdmin(admin.ModelAdmin):
                 dup_count = 0
                 for r in rows:
                     key = r['title'].lower()
-                    r['_is_duplicate'] = key in duplicates
-                    r['_existing_id'] = duplicates[key].id if key in duplicates else None
-                    if r['_is_duplicate']:
+                    r['is_duplicate'] = key in duplicates
+                    r['existing_id'] = duplicates[key].id if key in duplicates else None
+                    if r['is_duplicate']:
                         dup_count += 1
 
                 request.session['gsheet_import_rows'] = rows
@@ -402,24 +402,25 @@ class BusinessAdmin(admin.ModelAdmin):
                 updated = 0
                 created = 0
                 skipped = 0
+                META_KEYS = {'photo_url', 'is_duplicate', 'existing_id'}
 
                 for r in rows:
-                    rkey = str(r.get('_existing_id') or '')
+                    rkey = str(r.get('existing_id') or '')
                     if rkey in skip_ids:
                         skipped += 1
                         continue
 
-                    defaults = {k: v for k, v in r.items() if not k.startswith('_')}
+                    defaults = {k: v for k, v in r.items() if k not in META_KEYS}
 
-                    if r.get('_is_duplicate'):
-                        Business.objects.filter(id=r['_existing_id']).update(**defaults)
-                        biz = Business.objects.get(id=r['_existing_id'])
+                    if r.get('is_duplicate'):
+                        Business.objects.filter(id=r['existing_id']).update(**defaults)
+                        biz = Business.objects.get(id=r['existing_id'])
                         updated += 1
                     else:
                         biz = Business.objects.create(**defaults)
                         created += 1
 
-                    photo_url = r.get('_photo_url')
+                    photo_url = r.get('photo_url')
                     if photo_url and biz:
                         m = re_lib.search(r'/d/([a-zA-Z0-9_-]+)', photo_url)
                         if m:

@@ -64,7 +64,7 @@ def parse_rows(csv_text):
                 data[model_field] = value
         photo = row.get("Фото", "").strip()
         if photo:
-            data["_photo_url"] = photo
+            data["photo_url"] = photo
         title = data.get("title", "").strip()
         if title:
             rows.append(data)

@@ -67,16 +67,16 @@
         </thead>
         <tbody>
           {% for r in rows %}
-            <tr class="{% if r._is_duplicate %}duplicate{% else %}new-row{% endif %}">
+            <tr class="{% if r.is_duplicate %}duplicate{% else %}new-row{% endif %}">
               <td class="skip-col">
-                {% if r._is_duplicate %}
-                  <input type="checkbox" name="skip" value="{{ r._existing_id }}">
+                {% if r.is_duplicate %}
+                  <input type="checkbox" name="skip" value="{{ r.existing_id }}">
                 {% else %}
                   —
                 {% endif %}
               </td>
               <td>
-                {% if r._is_duplicate %}
+                {% if r.is_duplicate %}
                   <span class="badge badge-duplicate">Існує</span>
                 {% else %}
                   <span class="badge badge-new">Новий</span>
@@ -93,7 +93,7 @@
               </td>
               <td>{{ r.hotline|default:"—" }}</td>
               <td>
-                {% if r._photo_url %}
+                {% if r.photo_url %}
                   <span class="badge badge-photo">Є</span>
                 {% else %}
                   —
