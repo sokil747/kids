@@ -4,11 +4,13 @@
 {% block extrastyle %}
   {{ block.super }}
   <style>
-    .import-table { width:100%; border-collapse:collapse; margin:1em 0; }
+    .table-wrap { overflow-x:auto; max-width:100%; }
+    .import-table { border-collapse:collapse; margin:1em 0; min-width:900px; }
     .import-table th, .import-table td { padding:8px 12px; border:1px solid #ddd; text-align:left; }
-    .import-table th { background:#f5f5f5; font-weight:600; }
+    .import-table th { background:#f5f5f5; font-weight:600; white-space:nowrap; }
     .import-table tr.duplicate { background:#fff3cd; }
-    .import-table tr.new-row { background:#d4edda; }
+    .import-table tr.new-row { background:#d4edda; color:#000; }
+    .import-table tr.new-row .badge-new { color:#fff; }
     .badge { display:inline-block; padding:2px 8px; border-radius:3px; font-size:11px; font-weight:600; }
     .badge-duplicate { background:#ffc107; color:#333; }
     .badge-new { background:#28a745; color:#fff; }
@@ -21,6 +23,8 @@
     .form-row input[type=url] { width:100%; max-width:600px; padding:6px 10px; border:1px solid #ccc; border-radius:4px; }
     .submit-row { margin:1em 0; }
     .submit-row input { padding:8px 20px; }
+    .mapping-info { font-size:12px; color:#555; margin:0.5em 0; line-height:1.6; }
+    .mapping-info code { background:#f0f0f0; padding:1px 5px; border-radius:3px; font-size:11px; }
   </style>
 {% endblock %}
 
@@ -48,11 +52,23 @@
       </span>
     </div>
 
+    <div class="mapping-info">
+      <strong>Маппінг колонок таблиці → поля Business:</strong><br>
+      <code>Фото</code> → logo (завантажується),
+      <code>Назва мережі</code> → назва,
+      <code>Текст</code> → опис,
+      <code>Наші магазини</code> → online_store,
+      <code>Facebook/Instagram/TikTok/YouTube</code> → відповідні поля,
+      <code>Служба підтримки</code> → hotline
+      <span style="color:#999;">(значення без URL пропускаються)</span>
+    </div>
+
     <form method="post" action="">
       {% csrf_token %}
       <input type="hidden" name="action" value="confirm">
       <input type="hidden" name="sheet_url" value="{{ sheet_url }}">
 
+      <div class="table-wrap">
       <table class="import-table">
         <thead>
           <tr>
@@ -60,7 +76,11 @@
             <th>Статус</th>
             <th>Назва мережі</th>
             <th>Опис</th>
-            <th>Соціальні мережі</th>
+            <th>Наші магазини</th>
+            <th>Facebook</th>
+            <th>Instagram</th>
+            <th>TikTok</th>
+            <th>YouTube</th>
             <th>Телефон</th>
             <th>Фото</th>
           </tr>
@@ -84,25 +104,18 @@
               </td>
               <td><strong>{{ r.title }}</strong></td>
               <td>{{ r.description|truncatewords:20 }}</td>
-              <td>
-                {% if r.online_store %}<div>🛒 {{ r.online_store|truncatechars:30 }}</div>{% endif %}
-                {% if r.facebook %}<div>📘 {{ r.facebook|truncatechars:30 }}</div>{% endif %}
-                {% if r.instagram %}<div>📸 {{ r.instagram|truncatechars:30 }}</div>{% endif %}
-                {% if r.tiktok %}<div>🎵 {{ r.tiktok|truncatechars:30 }}</div>{% endif %}
-                {% if r.youtube %}<div>🎬 {{ r.youtube|truncatechars:30 }}</div>{% endif %}
-              </td>
+              <td>{% if r.online_store %}{{ r.online_store|truncatechars:30 }}{% else %}—{% endif %}</td>
+              <td>{% if r.facebook %}{{ r.facebook|truncatechars:30 }}{% else %}—{% endif %}</td>
+              <td>{% if r.instagram %}{{ r.instagram|truncatechars:30 }}{% else %}—{% endif %}</td>
+              <td>{% if r.tiktok %}{{ r.tiktok|truncatechars:30 }}{% else %}—{% endif %}</td>
+              <td>{% if r.youtube %}{{ r.youtube|truncatechars:30 }}{% else %}—{% endif %}</td>
               <td>{{ r.hotline|default:"—" }}</td>
-              <td>
-                {% if r.photo_url %}
-                  <span class="badge badge-photo">Є</span>
-                {% else %}
-                  —
-                {% endif %}
-              </td>
+              <td>{% if r.photo_url %}<span class="badge badge-photo">Є</span>{% else %}—{% endif %}</td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
+      </div>
 
       <div class="submit-row">
         <input type="submit" value="Підтвердити імпорт" class="default">
