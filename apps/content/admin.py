@@ -8,7 +8,7 @@ from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import Tag, Category, Content, ContentRating, Business
-from .import_utils import extract_spreadsheet_id, fetch_sheet_csv, parse_rows, find_duplicates, DEFAULT_SHEET_URL
+from .import_utils import extract_spreadsheet_id, extract_gid, fetch_sheet_csv, parse_rows, find_duplicates, DEFAULT_SHEET_URL
 
 
 @admin.register(Tag)
@@ -352,8 +352,10 @@ class BusinessAdmin(admin.ModelAdmin):
                     messages.error(request, "Не вдалося знайти ID таблиці у вказаному посиланні")
                     return redirect('admin:content_business_gsheet_import')
 
+                gid = extract_gid(sheet_url)
+
                 try:
-                    csv_text = fetch_sheet_csv(sheet_id)
+                    csv_text = fetch_sheet_csv(sheet_id, gid)
                     rows = parse_rows(csv_text)
                 except Exception as e:
                     messages.error(request, f"Помилка отримання даних з таблиці: {e}")

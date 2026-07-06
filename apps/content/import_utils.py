@@ -7,7 +7,7 @@ import requests
 DEFAULT_SHEET_URL = (
     "https://docs.google.com/spreadsheets/d/"
     "1U52vYgYqOt4Zb15bkrTn1g15rSoAP9Qw/"
-    "edit?usp=sharing&ouid=105201584908037490097&rtpof=true&sd=true"
+    "edit?gid=1170806001#gid=1170806001"
 )
 
 COLUMN_MAP = {
@@ -36,8 +36,15 @@ def extract_spreadsheet_id(url):
     return None
 
 
-def fetch_sheet_csv(spreadsheet_id):
+def extract_gid(url):
+    m = re.search(r"[?&]gid=(\d+)", url)
+    return m.group(1) if m else None
+
+
+def fetch_sheet_csv(spreadsheet_id, gid=None):
     url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv"
+    if gid:
+        url += f"&gid={gid}"
     resp = requests.get(url, allow_redirects=True, timeout=30)
     resp.raise_for_status()
     return resp.text
