@@ -582,7 +582,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             message = "\n".join(lines)
             keyboard = []
             if truncated:
-                keyboard.append([InlineKeyboardButton("📖 повний опис", callback_data=f"desc_{biz_id}")])
+                keyboard.append([InlineKeyboardButton("📖 повний опис", callback_data=f"desc_{biz_id}_{cat_id}")])
             if hotline:
                 keyboard.append([InlineKeyboardButton("📁 зберегти контакт", callback_data=f"contact_{biz_id}")])
             keyboard.append([
@@ -594,6 +594,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             chat_id = update.effective_chat.id
             if logo:
                 logo = f"https://kids-genius.run.place/media/business_logos/{logo.strip('/').split('/')[-1]}"
+                try:
+                    await query.message.delete()
+                except Exception:
+                    pass
                 try:
                     await context.bot.send_photo(
                         chat_id=chat_id,
@@ -620,20 +624,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                             reply_markup=InlineKeyboardMarkup(keyboard)
                         )
             else:
-                try:
-                    await context.bot.send_message(
-                        chat_id=chat_id,
-                        text=message,
-                        parse_mode='HTML',
-                        reply_markup=InlineKeyboardMarkup(keyboard)
-                    )
-                except Exception as e:
-                    logger.error(f"send_message(HTML) failed: {e}")
-                    await context.bot.send_message(
-                        chat_id=chat_id,
-                        text=message,
-                        reply_markup=InlineKeyboardMarkup(keyboard)
-                    )
+                await query.edit_message_text(
+                    text=message,
+                    parse_mode='HTML',
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
         except Exception as e:
             logger.error(f"Error in biz handler: {e}")
             await context.bot.send_message(
@@ -643,19 +638,28 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return
 
     if data.startswith("desc_"):
-        biz_id = int(data.split("_")[1])
+        parts = data.split("_")
+        biz_id = int(parts[1])
+        cat_id = int(parts[2]) if len(parts) > 2 else None
         business = bot_handler.get_business(biz_id)
         if business and business.get('description'):
+            text = f"📖 <b>{html.escape(business['title'])}</b>\n\n{html.escape(business['description'])}"
+            kb = [[
+                InlineKeyboardButton(back_text, callback_data=f"biz_{biz_id}_{cat_id or 0}"),
+                InlineKeyboardButton(main_menu_text, callback_data="main_menu")
+            ]]
             try:
-                await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text=f"📖 <b>{html.escape(business['title'])}</b>\n\n{html.escape(business['description'])}",
-                    parse_mode='HTML'
+                await query.edit_message_text(
+                    text=text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(kb)
                 )
             except Exception:
+                try:
+                    await query.message.delete()
+                except Exception:
+                    pass
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    text=f"📖 {business['title']}\n\n{business['description']}"
+                    text=text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(kb)
                 )
         return
 
@@ -666,6 +670,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             phone = ''.join(c for c in business['hotline'] if c.isdigit())
             if phone.startswith('0'):
                 phone = '380' + phone[1:]
+            try:
+                await query.message.delete()
+            except Exception:
+                pass
             await context.bot.send_contact(
                 chat_id=update.effective_chat.id,
                 phone_number=f"+{phone}",
