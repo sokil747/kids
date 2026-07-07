@@ -135,7 +135,15 @@
               <td>{{ r.hotline|default:"—" }}</td>
               <td>{% if r.country_name %}{{ r.country_name }}{% else %}—{% endif %}</td>
               <td>{% if r.category_name %}{{ r.category_name }}{% else %}—{% endif %}</td>
-              <td>{% if r.photo_url %}<span class="badge badge-photo">Є</span>{% else %}—{% endif %}</td>
+              <td style="max-width:200px;word-break:break-all;">
+                {% if r.photo_url %}
+                  <span class="badge badge-photo">Фото</span>
+                  <div style="font-size:11px;margin-top:2px;">{{ r.photo_url|truncatechars:50 }}</div>
+                  {% if r.photo_url|slice:":4" == "http" %}
+                    <div style="margin-top:4px;"><img src="{{ r.photo_url }}" style="max-width:100px;max-height:60px;border:1px solid #ccc;border-radius:3px;"></div>
+                  {% endif %}
+                {% else %}—{% endif %}
+              </td>
             </tr>
           {% endfor %}
         </tbody>
