@@ -79,20 +79,33 @@ def download_drive_image(file_id):
     session = requests.Session()
     session.headers.update({'User-Agent': 'Mozilla/5.0'})
 
-    strategies = [
+    # Try direct approaches first
+    for url in [
         f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000",
         f"https://drive.google.com/uc?id={file_id}&export=view",
-        f"https://docs.google.com/uc?export=download&id={file_id}",
-    ]
-
-    for url in strategies:
+    ]:
         try:
             r = session.get(url, allow_redirects=True, timeout=15)
-            ct = r.headers.get('content-type', '')
-            if r.status_code == 200 and ct.startswith('image/'):
+            if r.status_code == 200 and r.headers.get('content-type', '').startswith('image/'):
                 return r.content
         except Exception:
             continue
+
+    # Try download with confirmation token parsing
+    try:
+        url = f"https://docs.google.com/uc?export=download&id={file_id}"
+        r = session.get(url, allow_redirects=True, timeout=15)
+        if r.status_code == 200 and r.headers.get('content-type', '').startswith('image/'):
+            return r.content
+        # Look for confirm token in HTML
+        m = re.search(r'confirm=([^&\s"\']+)', r.text)
+        if m:
+            url2 = f"https://docs.google.com/uc?export=download&confirm={m.group(1)}&id={file_id}"
+            r2 = session.get(url2, allow_redirects=True, timeout=15)
+            if r2.status_code == 200 and r2.headers.get('content-type', '').startswith('image/'):
+                return r2.content
+    except Exception:
+        pass
 
     return None
 
