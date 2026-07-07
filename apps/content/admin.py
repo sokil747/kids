@@ -7,6 +7,7 @@ from django.urls import reverse, path
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.db.models import Q
 from .models import Tag, Category, Content, ContentRating, Business
 from .import_utils import COLUMN_MAP, extract_spreadsheet_id, extract_gid, fetch_sheet_csv, get_fieldnames, parse_rows, find_duplicates, BUSINESS_FIELDS, DEFAULT_SHEET_URL
 
@@ -490,10 +491,13 @@ class BusinessAdmin(admin.ModelAdmin):
                         biz = Business.objects.create(**defaults)
                         created += 1
 
-                    # Handle country (tags M2M) — comma-separated
+                    # Handle country (tags M2M) — comma-separated, case-insensitive
                     if r.get('country_name'):
                         tag_names = [n.strip() for n in r['country_name'].split(',')]
-                        tags = list(Tag.objects.filter(name__in=tag_names))
+                        q = Q()
+                        for n in tag_names:
+                            q |= Q(name__iexact=n)
+                        tags = list(Tag.objects.filter(q))
                         if tags:
                             biz.tags.set(tags)
 
@@ -508,7 +512,14 @@ class BusinessAdmin(admin.ModelAdmin):
                                 if cat.parent:
                                     cats.append(cat.parent)
                         if cats:
-                            biz.categories.set(cats)
+                            # Deduplicate while preserving order
+                            seen = set()
+                            unique_cats = []
+                            for c in cats:
+                                if c.pk not in seen:
+                                    seen.add(c.pk)
+                                    unique_cats.append(c)
+                            biz.categories.set(unique_cats)
 
                     photo_url = r.get('photo_url')
                     if photo_url and biz:
