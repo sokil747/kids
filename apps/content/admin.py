@@ -288,6 +288,13 @@ class ContentRatingAdmin(admin.ModelAdmin):
     rating_display.short_description = 'Rating'
 
 
+def _default_mapping_col(field, fieldnames):
+    for csv_col, model_field in COLUMN_MAP.items():
+        if model_field == field and csv_col in (fieldnames or []):
+            return csv_col
+    return next((s for s, m in COLUMN_MAP.items() if m == field), '')
+
+
 @admin.register(Business)
 class BusinessAdmin(admin.ModelAdmin):
     list_display = ('logo_preview', 'title', 'business_tags', 'business_categories', 'is_active_badge', 'updated_at')
@@ -415,7 +422,7 @@ class BusinessAdmin(admin.ModelAdmin):
                     'new_count': len(rows) - dup_count,
                     'fieldnames': fieldnames,
                     'mapping_fields': [
-                        (f, l, r, next((s for s, m in COLUMN_MAP.items() if m == f), ''))
+                        (f, l, r, _default_mapping_col(f, fieldnames))
                         for f, l, r in BUSINESS_FIELDS
                     ],
                     'title': 'Попередній перегляд імпорту',
@@ -462,7 +469,7 @@ class BusinessAdmin(admin.ModelAdmin):
                     'new_count': len(rows) - dup_count,
                     'fieldnames': fieldnames,
                     'mapping_fields': [
-                        (f, l, r, reverse_map.get(f, next((s for s, m in COLUMN_MAP.items() if m == f), '')))
+                        (f, l, r, reverse_map.get(f, _default_mapping_col(f, fieldnames)))
                         for f, l, r in BUSINESS_FIELDS
                     ],
                     'title': 'Попередній перегляд імпорту',
