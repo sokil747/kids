@@ -361,16 +361,28 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     main_menu_text = bt.main_menu_button_text if bt else "🏠 Main menu"
     tags_prompt = bt.tags_prompt_text if bt else "🌍 Choose a country:"
 
+    async def _edit_or_send(text, reply_markup=None, parse_mode=None):
+        try:
+            await query.edit_message_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
+        except Exception:
+            try:
+                await query.message.delete()
+            except Exception:
+                pass
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=text,
+                reply_markup=reply_markup,
+                parse_mode=parse_mode,
+            )
+
     if data == "main_menu":
         context.user_data.pop('selected_tag', None)
         tags = bot_handler.get_tags()
         if tags:
-            await query.edit_message_text(
-                tags_prompt,
-                reply_markup=build_tags_keyboard(tags)
-            )
+            await _edit_or_send(tags_prompt, reply_markup=build_tags_keyboard(tags))
         else:
-            await query.edit_message_text("No tags configured.")
+            await _edit_or_send("No tags configured.")
         return
 
     if data.startswith("tag_"):
@@ -407,7 +419,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         category_id = int(data.split("_")[1])
         category = bot_handler.get_category(category_id)
         if not category:
-            await query.edit_message_text("Category not found.")
+            await _edit_or_send("Category not found.")
             return
 
         children = category.get('children', [])
@@ -457,24 +469,21 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 InlineKeyboardButton(back_text, callback_data=f"back_{category.get('parent') or 'None'}"),
                 InlineKeyboardButton(main_menu_text, callback_data="main_menu")
             ])
-            await query.edit_message_text(name, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+            await _edit_or_send(name, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
         else:
             cta = category.get('cta_message', '').strip() or f"📂 **{category['name']}**\n\nNo items yet."
             keyboard = [[
                 InlineKeyboardButton(back_text, callback_data=f"back_{category.get('parent') or 'None'}"),
                 InlineKeyboardButton(main_menu_text, callback_data="main_menu")
             ]]
-            await query.edit_message_text(cta, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+            await _edit_or_send(cta, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
         return
 
     if data.startswith("back_main"):
         tags = bot_handler.get_tags()
         if tags:
             context.user_data.pop('selected_tag', None)
-            await query.edit_message_text(
-                tags_prompt,
-                reply_markup=build_tags_keyboard(tags)
-            )
+            await _edit_or_send(tags_prompt, reply_markup=build_tags_keyboard(tags))
         return
 
     if data.startswith("back_"):
@@ -483,22 +492,19 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             tags = bot_handler.get_tags()
             if tags:
                 context.user_data.pop('selected_tag', None)
-                await query.edit_message_text(
-                    tags_prompt,
-                    reply_markup=build_tags_keyboard(tags)
-                )
+                await _edit_or_send(tags_prompt, reply_markup=build_tags_keyboard(tags))
             return
 
         parent = bot_handler.get_category(int(parent_id))
         if not parent:
-            await query.edit_message_text("Category not found.")
+            await _edit_or_send("Category not found.")
             return
 
         children = parent.get('children', [])
         active_children = [c for c in children if c.get('is_active', True)]
         inline = parent.get('inline_display', False)
         cta = parent.get('cta_message', '').strip() or f"📂 **{parent['name']}**"
-        await query.edit_message_text(
+        await _edit_or_send(
             cta,
             reply_markup=build_category_keyboard(active_children, parent_id=parent.get('parent'), inline=inline, flag_prefix=flag_prefix, back_text=back_text, main_menu_text=main_menu_text),
             parse_mode='Markdown'
@@ -511,7 +517,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         content = bot_handler.get_content_detail(content_id)
 
         if not content:
-            await query.edit_message_text("Content not found.")
+            await _edit_or_send("Content not found.")
             return
 
         message = f"""
@@ -535,7 +541,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 InlineKeyboardButton(main_menu_text, callback_data="main_menu")
             ]
         ]
-        await query.edit_message_text(
+        await _edit_or_send(
             message,
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='Markdown'
