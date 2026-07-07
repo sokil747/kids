@@ -22,6 +22,8 @@ class Tag(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
+        verbose_name = "Country"
+        verbose_name_plural = "Countries"
         ordering = ['order', 'name']
         db_table = 'content_tag'
 
@@ -334,8 +336,8 @@ class Business(models.Model):
 
     emoji = models.CharField(max_length=10, blank=True, default="🎁", help_text="Emoji shown before the business name in bot lists (leave blank to hide)")
 
-    tags = models.ManyToManyField(Tag, related_name='businesses', blank=True, help_text="Country tags")
-    categories = models.ManyToManyField(Category, related_name='businesses', blank=True, help_text="Associated categories")
+    tags = models.ManyToManyField(Tag, verbose_name="Countries", related_name='businesses', blank=True, help_text="Country tags")
+    categories = models.ManyToManyField(Category, verbose_name="Categories", related_name='businesses', blank=True, help_text="Associated categories")
 
     order = models.PositiveIntegerField(default=0, help_text="Display order")
     is_active = models.BooleanField(default=True, help_text="Publish/unpublish")

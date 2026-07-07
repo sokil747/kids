@@ -99,6 +99,8 @@
             <th>TikTok</th>
             <th>YouTube</th>
             <th>Телефон</th>
+            <th>Країна</th>
+            <th>Категорія</th>
             <th>Фото</th>
           </tr>
         </thead>
@@ -127,6 +129,8 @@
               <td>{% if r.tiktok %}{{ r.tiktok|truncatechars:30 }}{% else %}—{% endif %}</td>
               <td>{% if r.youtube %}{{ r.youtube|truncatechars:30 }}{% else %}—{% endif %}</td>
               <td>{{ r.hotline|default:"—" }}</td>
+              <td>{% if r.country_name %}{{ r.country_name }}{% else %}—{% endif %}</td>
+              <td>{% if r.category_name %}{{ r.category_name }}{% else %}—{% endif %}</td>
               <td>{% if r.photo_url %}<span class="badge badge-photo">Є</span>{% else %}—{% endif %}</td>
             </tr>
           {% endfor %}

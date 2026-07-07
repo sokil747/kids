@@ -20,6 +20,8 @@ BUSINESS_FIELDS = [
     ("youtube", "YouTube", False),
     ("hotline", "Телефон", False),
     ("photo_url", "Фото (logo)", False),
+    ("country_name", "Країна", False),
+    ("category_name", "Категорія", False),
 ]
 
 URL_FIELDS = {"online_store", "facebook", "instagram", "tiktok", "youtube"}
@@ -34,6 +36,8 @@ COLUMN_MAP = {
     "TikTok": "tiktok",
     "YouTube": "youtube",
     "Служба підтримки": "hotline",
+    "Країна": "country_name",
+    "Категорія": "category_name",
 }
 
 
@@ -95,5 +99,11 @@ def parse_rows(csv_text, column_map=None):
 def find_duplicates(rows):
     from .models import Business
 
-    existing = Business.objects.filter(title__in=[r["title"] for r in rows])
-    return {b.title.lower(): b for b in existing}
+    row_titles_lower = {r["title"].lower() for r in rows}
+    existing = Business.objects.all()
+    dup_map = {}
+    for b in existing:
+        bl = b.title.lower()
+        if bl in row_titles_lower:
+            dup_map[bl] = b
+    return dup_map

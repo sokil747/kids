@@ -320,7 +320,7 @@ class BusinessAdmin(admin.ModelAdmin):
 
     def business_tags(self, obj):
         return ", ".join(str(t) for t in obj.tags.all()) or "—"
-    business_tags.short_description = 'Tags'
+    business_tags.short_description = 'Countries'
 
     def business_categories(self, obj):
         return ", ".join(str(c) for c in obj.categories.all()[:3]) or "—"
@@ -472,7 +472,7 @@ class BusinessAdmin(admin.ModelAdmin):
                 updated = 0
                 created = 0
                 skipped = 0
-                META_KEYS = {'photo_url', 'is_duplicate', 'existing_id'}
+                META_KEYS = {'photo_url', 'is_duplicate', 'existing_id', 'country_name', 'category_name'}
 
                 for r in rows:
                     rkey = str(r.get('existing_id') or '')
@@ -489,6 +489,26 @@ class BusinessAdmin(admin.ModelAdmin):
                     else:
                         biz = Business.objects.create(**defaults)
                         created += 1
+
+                    # Handle country (tags M2M) — comma-separated
+                    if r.get('country_name'):
+                        tag_names = [n.strip() for n in r['country_name'].split(',')]
+                        tags = list(Tag.objects.filter(name__in=tag_names))
+                        if tags:
+                            biz.tags.set(tags)
+
+                    # Handle category (categories M2M) — comma-separated, add parent if child
+                    if r.get('category_name'):
+                        cat_names = [n.strip() for n in r['category_name'].split(',')]
+                        cats = []
+                        for cn in cat_names:
+                            cat = Category.objects.filter(name__iexact=cn).first()
+                            if cat:
+                                cats.append(cat)
+                                if cat.parent:
+                                    cats.append(cat.parent)
+                        if cats:
+                            biz.categories.set(cats)
 
                     photo_url = r.get('photo_url')
                     if photo_url and biz:
