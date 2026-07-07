@@ -592,9 +592,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
             logo = business.get('logo')
             chat_id = update.effective_chat.id
-            if logo and logo.startswith('/media/'):
-                logo = f"https://kids-genius.run.place{logo}"
             if logo:
+                logo = f"https://kids-genius.run.place/media/business_logos/{logo.strip('/').split('/')[-1]}"
                 try:
                     await context.bot.send_photo(
                         chat_id=chat_id,
@@ -617,6 +616,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                         await context.bot.send_message(
                             chat_id=chat_id,
                             text=message,
+                            parse_mode='HTML',
                             reply_markup=InlineKeyboardMarkup(keyboard)
                         )
             else:
@@ -624,11 +624,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     await context.bot.send_message(
                         chat_id=chat_id,
                         text=message,
-                        reply_markup=InlineKeyboardMarkup(keyboard),
-                        parse_mode='HTML'
+                        parse_mode='HTML',
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
                 except Exception as e:
-                    logger.error(f"send_message(HTML) failed, falling back: {e}")
+                    logger.error(f"send_message(HTML) failed: {e}")
                     await context.bot.send_message(
                         chat_id=chat_id,
                         text=message,
