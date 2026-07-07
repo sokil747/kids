@@ -7,7 +7,6 @@ from django.urls import reverse, path
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.db.models import Q
 from .models import Tag, Category, Content, ContentRating, Business
 from .import_utils import COLUMN_MAP, extract_spreadsheet_id, extract_gid, fetch_sheet_csv, get_fieldnames, parse_rows, find_duplicates, BUSINESS_FIELDS, DEFAULT_SHEET_URL
 
@@ -528,13 +527,17 @@ class BusinessAdmin(admin.ModelAdmin):
 
                     # Handle country (tags M2M) — comma-separated, case-insensitive
                     if r.get('country_name'):
-                        tag_names = [n.strip() for n in r['country_name'].split(',')]
-                        q = Q()
-                        for n in tag_names:
-                            q |= Q(name__iexact=n)
-                        tags = list(Tag.objects.filter(q))
-                        if tags:
-                            biz.tags.set(tags)
+                        tag_names = [n.strip() for n in r['country_name'].split(',') if n.strip()]
+                        if tag_names:
+                            all_tags = list(Tag.objects.all())
+                            found = []
+                            for tn in tag_names:
+                                for t in all_tags:
+                                    if t.name.lower() == tn.lower():
+                                        found.append(t)
+                                        break
+                            if found:
+                                biz.tags.set(found)
 
                     # Handle category (categories M2M) — comma-separated, add parent if child
                     if r.get('category_name'):
