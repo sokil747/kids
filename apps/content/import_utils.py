@@ -110,6 +110,51 @@ def download_drive_image(file_id):
     return None
 
 
+def download_image(url):
+    """Try to download an image from any HTTP/HTTPS URL.
+    Supports Google Drive URLs and direct image URLs.
+    Returns (content_bytes, suggested_filename) or (None, None)."""
+    from urllib.parse import urlparse, unquote
+    import hashlib
+    from pathlib import Path
+
+    if not url:
+        return None, None
+
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
+        'Accept': 'image/webp,image/*,*/*;q=0.8',
+    })
+
+    # Google Drive URL
+    m = re.search(r'/d/([a-zA-Z0-9_-]+)', url)
+    if m:
+        data = download_drive_image(m.group(1))
+        if data:
+            return data, f"{m.group(1)}.jpg"
+
+    # Direct image URL
+    try:
+        r = session.get(url, allow_redirects=True, timeout=15, stream=True)
+        if r.status_code == 200:
+            ct = r.headers.get('content-type', '')
+            if ct.startswith('image/'):
+                data = r.content
+                ext = ct.split('/')[-1].split(';')[0]
+                if ext not in ('jpeg', 'png', 'gif', 'webp'):
+                    ext = 'jpg'
+                if ext == 'jpeg':
+                    ext = 'jpg'
+                path = unquote(urlparse(url).path)
+                basename = Path(path).stem or hashlib.md5(url.encode()).hexdigest()[:12]
+                return data, f"{basename}.{ext}"
+    except Exception:
+        pass
+
+    return None, None
+
+
 def parse_rows(csv_text, column_map=None):
     if column_map is None:
         column_map = COLUMN_MAP
