@@ -395,6 +395,52 @@ class BusinessAdmin(admin.ModelAdmin):
                 }
                 return render(request, 'admin/content/business/gsheet_import.html', ctx)
 
+            if action == 'apply_mapping':
+                csv_text = request.session.get('gsheet_import_csv', '')
+                if not csv_text:
+                    messages.error(request, "Сесія порожня. Будь ласка, виконайте попередній перегляд ще раз")
+                    return redirect('admin:content_business_gsheet_import')
+
+                fieldnames = get_fieldnames(csv_text)
+                column_map = {}
+                for biz_field, label, required in BUSINESS_FIELDS:
+                    csv_col = request.POST.get(f'map_{biz_field}')
+                    if csv_col and csv_col != '__skip__':
+                        column_map[csv_col] = biz_field
+
+                rows = parse_rows(csv_text, column_map)
+                if not rows:
+                    messages.warning(request, "Після застосування маппінгу не знайдено рядків з назвою мережі")
+                else:
+                    messages.success(request, f"Маппінг застосовано. Знайдено {len(rows)} рядків.")
+
+                duplicates = find_duplicates(rows)
+                dup_count = 0
+                for r in rows:
+                    key = r['title'].lower()
+                    r['is_duplicate'] = key in duplicates
+                    r['existing_id'] = duplicates[key].id if key in duplicates else None
+                    if r['is_duplicate']:
+                        dup_count += 1
+
+                request.session['gsheet_import_rows'] = rows
+
+                ctx = {
+                    **self.admin_site.each_context(request),
+                    'rows': rows,
+                    'sheet_url': request.session.get('gsheet_import_url', ''),
+                    'dup_count': dup_count,
+                    'new_count': len(rows) - dup_count,
+                    'fieldnames': fieldnames,
+                    'mapping_fields': [
+                        (f, l, r, next((s for s, m in COLUMN_MAP.items() if m == f), ''))
+                        for f, l, r in BUSINESS_FIELDS
+                    ],
+                    'title': 'Попередній перегляд імпорту',
+                    'opts': self.model._meta,
+                }
+                return render(request, 'admin/content/business/gsheet_import.html', ctx)
+
             if action == 'confirm':
                 csv_text = request.session.get('gsheet_import_csv', '')
                 if not csv_text:

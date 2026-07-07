@@ -27,6 +27,7 @@ URL_FIELDS = {"online_store", "facebook", "instagram", "tiktok", "youtube"}
 COLUMN_MAP = {
     "Назва мережі": "title",
     "Текст": "description",
+    "Фото": "photo_url",
     "Наші магазини": "online_store",
     "Facebook": "facebook",
     "Instagram": "instagram",
