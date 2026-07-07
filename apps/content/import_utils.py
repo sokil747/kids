@@ -37,7 +37,10 @@ COLUMN_MAP = {
     "YouTube": "youtube",
     "Служба підтримки": "hotline",
     "Країна": "country_name",
+    "Country": "country_name",
+    "Страна": "country_name",
     "Категорія": "category_name",
+    "Category": "category_name",
 }
 
 

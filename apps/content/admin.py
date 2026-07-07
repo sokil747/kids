@@ -322,18 +322,26 @@ class BusinessAdmin(admin.ModelAdmin):
 
     def logo_preview(self, obj):
         if obj.logo:
+            try:
+                url = obj.logo.url
+            except Exception:
+                return "—"
             return format_html(
                 '<img src="{}" style="width:100px;height:100px;object-fit:cover;border-radius:4px;" />',
-                obj.logo.url
+                url
             )
         return "—"
     logo_preview.short_description = 'Logo'
 
     def logo_preview_large(self, obj):
         if obj.logo:
+            try:
+                url = obj.logo.url
+            except Exception:
+                return "—"
             return format_html(
                 '<img src="{}" style="width:200px;height:200px;object-fit:cover;border-radius:6px;" />',
-                obj.logo.url
+                url
             )
         return "—"
     logo_preview_large.short_description = 'Logo Preview'
@@ -444,6 +452,7 @@ class BusinessAdmin(admin.ModelAdmin):
                         dup_count += 1
 
                 request.session['gsheet_import_rows'] = rows
+                reverse_map = {v: k for k, v in column_map.items()}
 
                 ctx = {
                     **self.admin_site.each_context(request),
@@ -453,7 +462,7 @@ class BusinessAdmin(admin.ModelAdmin):
                     'new_count': len(rows) - dup_count,
                     'fieldnames': fieldnames,
                     'mapping_fields': [
-                        (f, l, r, next((s for s, m in COLUMN_MAP.items() if m == f), ''))
+                        (f, l, r, reverse_map.get(f, next((s for s, m in COLUMN_MAP.items() if m == f), '')))
                         for f, l, r in BUSINESS_FIELDS
                     ],
                     'title': 'Попередній перегляд імпорту',
