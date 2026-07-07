@@ -75,6 +75,28 @@ def get_fieldnames(csv_text):
     return reader.fieldnames
 
 
+def download_drive_image(file_id):
+    session = requests.Session()
+    session.headers.update({'User-Agent': 'Mozilla/5.0'})
+
+    strategies = [
+        f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000",
+        f"https://drive.google.com/uc?id={file_id}&export=view",
+        f"https://docs.google.com/uc?export=download&id={file_id}",
+    ]
+
+    for url in strategies:
+        try:
+            r = session.get(url, allow_redirects=True, timeout=15)
+            ct = r.headers.get('content-type', '')
+            if r.status_code == 200 and ct.startswith('image/'):
+                return r.content
+        except Exception:
+            continue
+
+    return None
+
+
 def parse_rows(csv_text, column_map=None):
     if column_map is None:
         column_map = COLUMN_MAP

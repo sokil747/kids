@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.conf import settings
 from .models import Tag, Category, Content, ContentRating, Business
-from .import_utils import COLUMN_MAP, extract_spreadsheet_id, extract_gid, fetch_sheet_csv, get_fieldnames, parse_rows, find_duplicates, BUSINESS_FIELDS, DEFAULT_SHEET_URL
+from .import_utils import COLUMN_MAP, extract_spreadsheet_id, extract_gid, fetch_sheet_csv, get_fieldnames, parse_rows, find_duplicates, download_drive_image, BUSINESS_FIELDS, DEFAULT_SHEET_URL
 
 
 @admin.register(Tag)
@@ -483,7 +483,6 @@ class BusinessAdmin(admin.ModelAdmin):
                     messages.error(request, "Сесія порожня. Будь ласка, виконайте попередній перегляд ще раз")
                     return redirect('admin:content_business_gsheet_import')
 
-                import requests as req_lib
                 import re as re_lib
                 from django.core.files.base import ContentFile
 
@@ -565,13 +564,9 @@ class BusinessAdmin(admin.ModelAdmin):
                         m = re_lib.search(r'/d/([a-zA-Z0-9_-]+)', photo_url)
                         if m:
                             file_id = m.group(1)
-                            dl_url = f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000"
-                            try:
-                                img_resp = req_lib.get(dl_url, allow_redirects=True, timeout=15)
-                                if img_resp.status_code == 200 and img_resp.headers.get('content-type', '').startswith('image/'):
-                                    biz.logo.save(f"{file_id}.jpg", ContentFile(img_resp.content), save=True)
-                            except Exception:
-                                pass
+                            img_data = download_drive_image(file_id)
+                            if img_data:
+                                biz.logo.save(f"{file_id}.jpg", ContentFile(img_data), save=True)
 
                 request.session.pop('gsheet_import_rows', None)
                 request.session.pop('gsheet_import_url', None)
