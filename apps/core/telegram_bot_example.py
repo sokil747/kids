@@ -562,22 +562,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 lines.append(f"\n<i>{desc}{'...' if truncated else ''}</i>")
 
             if business.get('address'):
-                address = html.escape(business['address'])
-                lines.append(f"\n📍 Адреса: <a href='https://maps.google.com/?q={quote(address)}'>{address}</a>")
+                raw_address = business['address']
+                lines.append(f"\n📍 Адреса: <a href='https://maps.google.com/?q={quote(raw_address)}'>{html.escape(raw_address)}</a>")
             if business.get('online_store'):
-                lines.append(f'🛒 <a href="{html.escape(business["online_store"])}">Наші магазини</a>')
+                lines.append(f'🛒 <a href="{business["online_store"]}">Наші магазини</a>')
             if business.get('facebook'):
-                lines.append(f'📘 <a href="{html.escape(business["facebook"])}">Facebook</a>')
+                lines.append(f'📘 <a href="{business["facebook"]}">Facebook</a>')
             if business.get('instagram'):
-                lines.append(f'📸 <a href="{html.escape(business["instagram"])}">Instagram</a>')
+                lines.append(f'📸 <a href="{business["instagram"]}">Instagram</a>')
             if business.get('tiktok'):
-                lines.append(f'🎵 <a href="{html.escape(business["tiktok"])}">TikTok</a>')
+                lines.append(f'🎵 <a href="{business["tiktok"]}">TikTok</a>')
             if business.get('youtube'):
-                lines.append(f'🎬 <a href="{html.escape(business["youtube"])}">YouTube</a>')
+                lines.append(f'🎬 <a href="{business["youtube"]}">YouTube</a>')
             hotline = business.get('hotline', '').strip()
             if hotline:
-                label = html.escape(business.get('hotline_label', '').strip() or "Гаряча лінія")
-                lines.append(f"📞 {label}: {html.escape(hotline)}")
+                label = business.get('hotline_label', '').strip() or "Гаряча лінія"
+                lines.append(f"📞 {html.escape(label)}: {html.escape(hotline)}")
 
             message = "\n".join(lines)
             keyboard = []
@@ -603,7 +603,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                         parse_mode='HTML',
                         reply_markup=InlineKeyboardMarkup(keyboard)
                     )
-                except Exception:
+                except Exception as e:
+                    logger.error(f"send_photo(HTML) failed: {e}")
                     try:
                         await context.bot.send_photo(
                             chat_id=chat_id,
@@ -611,8 +612,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                             caption=message,
                             reply_markup=InlineKeyboardMarkup(keyboard)
                         )
-                    except Exception as e:
-                        logger.error(f"Error sending business with logo: {e}")
+                    except Exception as e2:
+                        logger.error(f"send_photo(plain) also failed: {e2}")
                         await context.bot.send_message(
                             chat_id=chat_id,
                             text=message,
@@ -626,7 +627,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                         reply_markup=InlineKeyboardMarkup(keyboard),
                         parse_mode='HTML'
                     )
-                except Exception:
+                except Exception as e:
+                    logger.error(f"send_message(HTML) failed, falling back: {e}")
                     await context.bot.send_message(
                         chat_id=chat_id,
                         text=message,

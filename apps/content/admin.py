@@ -7,6 +7,7 @@ from django.urls import reverse, path
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.conf import settings
 from .models import Tag, Category, Content, ContentRating, Business
 from .import_utils import COLUMN_MAP, extract_spreadsheet_id, extract_gid, fetch_sheet_csv, get_fieldnames, parse_rows, find_duplicates, BUSINESS_FIELDS, DEFAULT_SHEET_URL
 
@@ -327,9 +328,9 @@ class BusinessAdmin(admin.ModelAdmin):
     )
 
     def logo_preview(self, obj):
-        if obj.logo:
+        if obj.logo and obj.logo.name:
             try:
-                url = obj.logo.url
+                url = f"{settings.MEDIA_URL}{obj.logo.name}"
             except Exception:
                 return "—"
             return format_html(
@@ -340,9 +341,9 @@ class BusinessAdmin(admin.ModelAdmin):
     logo_preview.short_description = 'Logo'
 
     def logo_preview_large(self, obj):
-        if obj.logo:
+        if obj.logo and obj.logo.name:
             try:
-                url = obj.logo.url
+                url = f"{settings.MEDIA_URL}{obj.logo.name}"
             except Exception:
                 return "—"
             return format_html(
