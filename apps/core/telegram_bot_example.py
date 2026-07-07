@@ -1,4 +1,5 @@
 import os
+import html
 import requests
 import logging
 from urllib.parse import quote
@@ -551,32 +552,32 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 await query.edit_message_text("Business not found.")
                 return
 
-            lines = [f"🏪 **{business['title']}**"]
+            lines = [f"🏪 <b>{html.escape(business['title'])}</b>"]
             truncated = False
             if business.get('description'):
-                desc = business['description']
+                desc = html.escape(business['description'])
                 truncated = len(desc) > 200
                 if truncated:
                     desc = desc[:200]
-                lines.append(f"\n_{desc}{'...' if truncated else ''}_")
+                lines.append(f"\n<i>{desc}{'...' if truncated else ''}</i>")
 
             if business.get('address'):
-                address = business['address']
-                lines.append(f"\n📍 Адреса: [{address}](https://maps.google.com/?q={quote(address)})")
+                address = html.escape(business['address'])
+                lines.append(f"\n📍 Адреса: <a href='https://maps.google.com/?q={quote(address)}'>{address}</a>")
             if business.get('online_store'):
-                lines.append(f"🛒 [Наші магазини]({business['online_store']})")
+                lines.append(f'🛒 <a href="{html.escape(business["online_store"])}">Наші магазини</a>')
             if business.get('facebook'):
-                lines.append(f"📘 [Facebook]({business['facebook']})")
+                lines.append(f'📘 <a href="{html.escape(business["facebook"])}">Facebook</a>')
             if business.get('instagram'):
-                lines.append(f"📸 [Instagram]({business['instagram']})")
+                lines.append(f'📸 <a href="{html.escape(business["instagram"])}">Instagram</a>')
             if business.get('tiktok'):
-                lines.append(f"🎵 [TikTok]({business['tiktok']})")
+                lines.append(f'🎵 <a href="{html.escape(business["tiktok"])}">TikTok</a>')
             if business.get('youtube'):
-                lines.append(f"🎬 [YouTube]({business['youtube']})")
+                lines.append(f'🎬 <a href="{html.escape(business["youtube"])}">YouTube</a>')
             hotline = business.get('hotline', '').strip()
             if hotline:
-                label = business.get('hotline_label', '').strip() or "Гаряча лінія"
-                lines.append(f"📞 {label}: {hotline}")
+                label = html.escape(business.get('hotline_label', '').strip() or "Гаряча лінія")
+                lines.append(f"📞 {label}: {html.escape(hotline)}")
 
             message = "\n".join(lines)
             keyboard = []
@@ -591,13 +592,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
             logo = business.get('logo')
             chat_id = update.effective_chat.id
+            if logo and logo.startswith('/media/'):
+                logo = f"https://kids-genius.run.place{logo}"
             if logo:
                 try:
                     await context.bot.send_photo(
                         chat_id=chat_id,
                         photo=logo,
                         caption=message,
-                        parse_mode='Markdown',
+                        parse_mode='HTML',
                         reply_markup=InlineKeyboardMarkup(keyboard)
                     )
                 except Exception:
@@ -621,7 +624,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                         chat_id=chat_id,
                         text=message,
                         reply_markup=InlineKeyboardMarkup(keyboard),
-                        parse_mode='Markdown'
+                        parse_mode='HTML'
                     )
                 except Exception:
                     await context.bot.send_message(
@@ -644,8 +647,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             try:
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    text=f"📖 **{business['title']}**\n\n{business['description']}",
-                    parse_mode='Markdown'
+                    text=f"📖 <b>{html.escape(business['title'])}</b>\n\n{html.escape(business['description'])}",
+                    parse_mode='HTML'
                 )
             except Exception:
                 await context.bot.send_message(
