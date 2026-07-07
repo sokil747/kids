@@ -8,10 +8,12 @@
     .import-table { border-collapse:collapse; margin:1em 0; min-width:900px; }
     .import-table th, .import-table td { padding:8px 12px; border:1px solid #ddd; text-align:left; }
     .import-table th { background:#f5f5f5; font-weight:600; white-space:nowrap; color:#000; font-size:14px; }
-    .import-table tr.duplicate { background:#fff3cd; }
+    .import-table tr.duplicate { color:#000; }
+    .import-table tr.duplicate.skipped { opacity:0.6; }
     .import-table tr.new-row { background:#d4edda; color:#000; }
     .badge { display:inline-block; padding:2px 8px; border-radius:3px; font-size:11px; font-weight:600; }
-    .badge-duplicate { background:#ffc107; color:#333; }
+    .badge-replace { background:#ffc107; color:#333; }
+    .badge-skip { background:#6c757d; color:#fff; }
     .badge-new { background:#28a745; color:#fff; }
     .badge-photo { background:#17a2b8; color:#fff; }
     .skip-col { text-align:center; }
@@ -27,6 +29,7 @@
     .mapping-wrap td, .mapping-wrap th { padding:4px 12px; }
     .mapping-wrap select { font-size:13px; padding:2px 6px; }
     .mapping-wrap .hint { font-size:12px; color:#888; margin-top:6px; }
+    .select-all { cursor:pointer; }
   </style>
 {% endblock %}
 
@@ -50,7 +53,7 @@
       &nbsp;
       <span style="color:#cc7a00;">⚠ Дублікатів: {{ dup_count }}</span>
       <span style="float:right;font-size:12px;color:#666;">
-        Позначте дублікати ☑, які потрібно пропустити (не оновлювати)
+        ☑ позначені дублікати — будуть пропущені (без змін), не позначені — замінені новими даними
       </span>
     </div>
 
@@ -89,8 +92,8 @@
       <table class="import-table">
         <thead>
           <tr>
-            <th>Пропустити</th>
-            <th>Статус</th>
+            <th><input type="checkbox" id="select-all" class="select-all" title="Вибрати/зняти всі"> Пропустити</th>
+            <th>Дія</th>
             <th>Назва мережі</th>
             <th>Опис</th>
             <th>Наші магазини</th>
@@ -109,16 +112,16 @@
             <tr class="{% if r.is_duplicate %}duplicate{% else %}new-row{% endif %}">
               <td class="skip-col">
                 {% if r.is_duplicate %}
-                  <input type="checkbox" name="skip" value="{{ r.existing_id }}">
+                  <input type="checkbox" name="skip" value="{{ r.existing_id }}" class="skip-checkbox">
                 {% else %}
                   —
                 {% endif %}
               </td>
               <td>
                 {% if r.is_duplicate %}
-                  <span class="badge badge-duplicate">Існує</span>
+                  <span class="badge badge-replace action-badge">🔄 Заміна</span>
                 {% else %}
-                  <span class="badge badge-new">Новий</span>
+                  <span class="badge badge-new">➕ Новий</span>
                 {% endif %}
               </td>
               <td><strong>{{ r.title }}</strong></td>
@@ -143,6 +146,43 @@
         <a href="{% url 'admin:content_business_gsheet_import' %}" class="button">Скасувати</a>
       </div>
     </form>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var selectAll = document.getElementById('select-all');
+        if (selectAll) {
+          selectAll.addEventListener('change', function() {
+            var checkboxes = document.querySelectorAll('.skip-checkbox');
+            checkboxes.forEach(function(cb) {
+              cb.checked = selectAll.checked;
+              var row = cb.closest('tr');
+              var badge = row && row.querySelector('.action-badge');
+              if (badge) {
+                badge.textContent = selectAll.checked ? '⏭ Пропуск' : '🔄 Заміна';
+                badge.className = 'badge ' + (selectAll.checked ? 'badge-skip' : 'badge-replace') + ' action-badge';
+              }
+              if (row) {
+                row.classList.toggle('skipped', selectAll.checked);
+              }
+            });
+          });
+        }
+
+        document.querySelectorAll('.skip-checkbox').forEach(function(cb) {
+          cb.addEventListener('change', function() {
+            var row = cb.closest('tr');
+            var badge = row && row.querySelector('.action-badge');
+            if (badge) {
+              badge.textContent = cb.checked ? '⏭ Пропуск' : '🔄 Заміна';
+              badge.className = 'badge ' + (cb.checked ? 'badge-skip' : 'badge-replace') + ' action-badge';
+            }
+            if (row) {
+              row.classList.toggle('skipped', cb.checked);
+            }
+          });
+        });
+      });
+    </script>
 
   {% else %}
     <form method="post" action="">
