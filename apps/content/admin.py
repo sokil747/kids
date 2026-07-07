@@ -290,9 +290,16 @@ class ContentRatingAdmin(admin.ModelAdmin):
 
 @admin.register(Business)
 class BusinessAdmin(admin.ModelAdmin):
+    list_display = ('logo_preview', 'title', 'business_tags', 'business_categories', 'is_active_badge', 'updated_at')
+    list_filter = ('is_active', 'tags', 'categories')
+    search_fields = ('title', 'description', 'address')
+    readonly_fields = ('created_at', 'updated_at', 'logo_preview_large')
+    filter_horizontal = ('tags', 'categories')
+    change_list_template = 'admin/content/business/change_list.html'
+
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'logo', 'description', 'emoji')
+            'fields': ('title', 'logo', 'logo_preview_large', 'description', 'emoji')
         }),
         ('Contact & Location', {
             'fields': ('address', 'geo_coordinates', 'hotline', 'hotline_label'),
@@ -312,12 +319,24 @@ class BusinessAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
-    list_display = ('title', 'business_tags', 'business_categories', 'is_active_badge', 'updated_at')
-    list_filter = ('is_active', 'tags', 'categories')
-    search_fields = ('title', 'description', 'address')
-    readonly_fields = ('created_at', 'updated_at')
-    filter_horizontal = ('tags', 'categories')
-    change_list_template = 'admin/content/business/change_list.html'
+
+    def logo_preview(self, obj):
+        if obj.logo:
+            return format_html(
+                '<img src="{}" style="width:100px;height:100px;object-fit:cover;border-radius:4px;" />',
+                obj.logo.url
+            )
+        return "—"
+    logo_preview.short_description = 'Logo'
+
+    def logo_preview_large(self, obj):
+        if obj.logo:
+            return format_html(
+                '<img src="{}" style="width:200px;height:200px;object-fit:cover;border-radius:6px;" />',
+                obj.logo.url
+            )
+        return "—"
+    logo_preview_large.short_description = 'Logo Preview'
 
     def business_tags(self, obj):
         return ", ".join(str(t) for t in obj.tags.all()) or "—"
