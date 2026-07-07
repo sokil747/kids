@@ -565,7 +565,7 @@ class BusinessAdmin(admin.ModelAdmin):
                         m = re_lib.search(r'/d/([a-zA-Z0-9_-]+)', photo_url)
                         if m:
                             file_id = m.group(1)
-                            dl_url = f"https://drive.google.com/uc?export=download&confirm=t&id={file_id}"
+                            dl_url = f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000"
                             try:
                                 img_resp = req_lib.get(dl_url, allow_redirects=True, timeout=15)
                                 if img_resp.status_code == 200 and img_resp.headers.get('content-type', '').startswith('image/'):
